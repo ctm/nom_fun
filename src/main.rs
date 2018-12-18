@@ -5,7 +5,7 @@
 declare_trace!();
 
 pub fn main() {
-  named!(parser<Vec<&[u8]>>,
+  named!(parser<&str, Vec<&str>>,
     //wrap a parser with tr!() to add a trace point
     tr!(preceded!(
       tr!(tag!("data: ")),
@@ -20,7 +20,7 @@ pub fn main() {
     ))
   );
 
-  println!("parsed: {:?}", parser(&b"data: (1,2,3)"[..]));
+  println!("parsed: {:?}", parser(&"data: (1,2,3)"[..]));
 
   // prints the last parser trace
   print_trace!();
@@ -36,10 +36,12 @@ pub struct Color {
   pub blue:  u8,
 }
 
+#[allow(dead_code)]
 fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
   u8::from_str_radix(input, 16)
 }
 
+#[allow(dead_code)]
 fn is_hex_digit(c: char) -> bool {
   c.is_digit(16)
 }
