@@ -96,7 +96,7 @@ fn parse_color() {
 // TENTHS = /\.([0-9])/
 // HOUR_AND_MINUTE_PREFIX = /#{HOUR_PREFIX}?#{DOUBLE_DIGIT_MINUTE_PREFIX}/
 // MINUTE_PREFIX = /#{HOUR_AND_MINUTE_PREFIX}|#{SINGLE_DIGIT_MINUTE_PREFIX}/
-// PREFIX_AND_DOUBLE_DIGIT_SECONDS = /#{MINUTE_PREFIX}#{DOUBLE_DIGIT_SECONDS}/
+// PREFIX_AND_DOUBLE_DIGIT_SECONDS = /#{MINUTE_PREFIX}?#{DOUBLE_DIGIT_SECONDS}/
 // WITHOUT_DECIMAL = /#{PREFIX_AND_DOUBLE_DIGIT_SECONDS}|#{SINGLE_DIGIT_SECONDS}/
 // ALL = /#{WITHOUT_DECIMAL}#{TENTHS}?/
 
@@ -222,9 +222,12 @@ named!(minute_prefix<CompleteStr, Duration>,
 
 named!(prefix_and_double_digit_seconds<CompleteStr, Duration>,
   do_parse!(
-    minutes: minute_prefix >>
+    minutes: opt!(minute_prefix) >>
     seconds: double_digit_seconds >>
-    (minutes + seconds)
+    (match minutes {
+      None => seconds,
+      Some(minutes) => minutes + seconds
+    })
   )
 );
 
@@ -272,13 +275,10 @@ fn test_all() {
     assert_eq!(Duration::new(1, 0),
                all(CompleteStr("1")).unwrap().1);
 
-// TODO: fix    
-//    assert_eq!(Duration::new(5, 0),
-//               all(CompleteStr("05")).unwrap().1);
+    assert_eq!(Duration::new(5, 0),
+               all(CompleteStr("05")).unwrap().1);
 
-// TODO: fix    
-//    assert_eq!(Duration::new(10, 0),
-//               all(CompleteStr("10")).unwrap().1);
-
+    assert_eq!(Duration::new(10, 0),
+               all(CompleteStr("10")).unwrap().1);
 }
     
