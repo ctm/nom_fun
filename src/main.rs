@@ -203,3 +203,49 @@ fn test_tenths() {
     assert_eq!(Duration::new(1, 0), tenths(".9").unwrap().1 +
                                     tenths(".1").unwrap().1);
 }
+
+named!(hour_and_minute_prefix<&str, Duration>,
+  do_parse!(
+    hours: opt!(hour_prefix) >>
+    minutes: double_digit_minute_prefix >>
+    (match hours {
+      None => minutes,
+      Some(hours) => hours + minutes,
+    })
+  )
+);
+
+named!(minute_prefix<&str, Duration>,
+  alt!(hour_and_minute_prefix | single_digit_minute_prefix)
+);
+
+named!(prefix_and_double_digit_seconds<&str, Duration>,
+  do_parse!(
+    minutes: minute_prefix >>
+    seconds: double_digit_seconds >>
+    (minutes + seconds)
+  )
+);
+
+named!(without_decimal<&str, Duration>,
+  alt!(prefix_and_double_digit_seconds | single_digit_seconds)
+);
+
+// TODO: all is a horrible name!
+named!(all<&str, Duration>,
+  do_parse!(
+    seconds: without_decimal >>
+    tenths: opt!(tenths) >>
+    (match tenths {
+      None => seconds,
+      Some(tenths) => seconds + tenths,
+    })
+  )
+);
+
+#[test]
+fn test_all() {
+    assert_eq!(Duration::new(8 * SECONDS_IN_MINUTE + 22, 0),
+               all("8:22").unwrap().1);
+}
+    
