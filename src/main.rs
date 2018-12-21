@@ -3,6 +3,7 @@
 
 use std::time::Duration;
 use nom::digit;
+use nom::types::CompleteStr;
 
 //adds a thread local storage object to store the trace
 declare_trace!();
@@ -128,7 +129,7 @@ const TENTHS_IN_A_NANOSECOND: u32 = NANOSECONDS_IN_SECOND / 10;
 //
 //     complete_named!(digit, is_a!("0123456789"));
 
-named!(hour_prefix<&str, Duration>,
+named!(hour_prefix<CompleteStr, Duration>,
   do_parse!(
     digits: digit >>  
     tag!(":") >>
@@ -139,25 +140,25 @@ named!(hour_prefix<&str, Duration>,
 
 #[test]
 fn test_hour_prefix() {
-    assert_eq!(Duration::new(3600, 0), hour_prefix("1:").unwrap().1);
-    assert_eq!(Duration::new(36000, 0), hour_prefix("10:").unwrap().1);
+    assert_eq!(Duration::new(3600, 0), hour_prefix(CompleteStr("1:")).unwrap().1);
+    assert_eq!(Duration::new(36000, 0), hour_prefix(CompleteStr("10:")).unwrap().1);
 }
 
-named!(zero_through_five<&str, u8>,
+named!(zero_through_five<CompleteStr, u8>,
   do_parse!(
     digit: one_of!("012345") >>
     (digit as u8 - b'0')
   )
 );
 
-named!(single_digit<&str, u8>,
+named!(single_digit<CompleteStr, u8>,
   do_parse!(
     digit: one_of!("0123456789") >>
     (digit as u8 - b'0')
   )
 );
 
-named!(double_digit_minute_prefix<&str, Duration>,
+named!(double_digit_minute_prefix<CompleteStr, Duration>,
   do_parse!(
     tens: zero_through_five >>
     ones: single_digit >>
@@ -166,7 +167,7 @@ named!(double_digit_minute_prefix<&str, Duration>,
   )
 );
 
-named!(single_digit_minute_prefix<&str, Duration>,
+named!(single_digit_minute_prefix<CompleteStr, Duration>,
   do_parse!(
     ones: single_digit >>
     tag!(":") >>
@@ -174,7 +175,7 @@ named!(single_digit_minute_prefix<&str, Duration>,
   )
 );
 
-named!(double_digit_seconds<&str, Duration>,
+named!(double_digit_seconds<CompleteStr, Duration>,
   do_parse!(
     tens: zero_through_five >>
     ones: single_digit >>
@@ -182,14 +183,14 @@ named!(double_digit_seconds<&str, Duration>,
   )
 );
 
-named!(single_digit_seconds<&str, Duration>,
+named!(single_digit_seconds<CompleteStr, Duration>,
   do_parse!(
     ones: single_digit >>
     (Duration::new(ones as u64, 0))
   )
 );
 
-named!(tenths<&str, Duration>,
+named!(tenths<CompleteStr, Duration>,
   do_parse!(
     tag!(".") >>
     tenth: single_digit >>
@@ -199,12 +200,12 @@ named!(tenths<&str, Duration>,
 
 #[test]
 fn test_tenths() {
-    assert_eq!(Duration::new(0, 900_000_000), tenths(".9").unwrap().1);
-    assert_eq!(Duration::new(1, 0), tenths(".9").unwrap().1 +
-                                    tenths(".1").unwrap().1);
+    assert_eq!(Duration::new(0, 900_000_000), tenths(CompleteStr(".9")).unwrap().1);
+    assert_eq!(Duration::new(1, 0), tenths(CompleteStr(".9")).unwrap().1 +
+                                    tenths(CompleteStr(".1")).unwrap().1);
 }
 
-named!(hour_and_minute_prefix<&str, Duration>,
+named!(hour_and_minute_prefix<CompleteStr, Duration>,
   do_parse!(
     hours: opt!(hour_prefix) >>
     minutes: double_digit_minute_prefix >>
@@ -215,11 +216,11 @@ named!(hour_and_minute_prefix<&str, Duration>,
   )
 );
 
-named!(minute_prefix<&str, Duration>,
+named!(minute_prefix<CompleteStr, Duration>,
   alt!(hour_and_minute_prefix | single_digit_minute_prefix)
 );
 
-named!(prefix_and_double_digit_seconds<&str, Duration>,
+named!(prefix_and_double_digit_seconds<CompleteStr, Duration>,
   do_parse!(
     minutes: minute_prefix >>
     seconds: double_digit_seconds >>
@@ -227,12 +228,12 @@ named!(prefix_and_double_digit_seconds<&str, Duration>,
   )
 );
 
-named!(without_decimal<&str, Duration>,
+named!(without_decimal<CompleteStr, Duration>,
   alt!(prefix_and_double_digit_seconds | single_digit_seconds)
 );
 
 // TODO: all is a horrible name!
-named!(all<&str, Duration>,
+named!(all<CompleteStr, Duration>,
   do_parse!(
     seconds: without_decimal >>
     tenths: opt!(tenths) >>
@@ -246,6 +247,6 @@ named!(all<&str, Duration>,
 #[test]
 fn test_all() {
     assert_eq!(Duration::new(8 * SECONDS_IN_MINUTE + 22, 0),
-               all("8:22").unwrap().1);
+               all(CompleteStr("8:22")).unwrap().1);
 }
     
