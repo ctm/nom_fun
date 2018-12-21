@@ -102,8 +102,9 @@ fn parse_color() {
 
 const SECONDS_IN_MINUTE: u64 = 60;
 const MINUTES_IN_HOUR: u64 = 60;
+const SECONDS_IN_HOUR: u64 = SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
 const NANOSECONDS_IN_SECOND: u32 = 1_000_000_000;
-const TENTHS_IN_A_NANOSECOND: u32 = NANOSECONDS_IN_SECOND / 10;
+const TENTHS_IN_NANOSECOND: u32 = NANOSECONDS_IN_SECOND / 10;
 
 // So, nom::digit recognizes one *or more* digits.  I don't yet know how
 // to recognize exactly one digit.  Ugh!
@@ -133,8 +134,7 @@ named!(hour_prefix<CompleteStr, Duration>,
   do_parse!(
     digits: digit >>  
     tag!(":") >>
-    (Duration::new(digits.parse::<u64>().unwrap() *
-                   MINUTES_IN_HOUR * SECONDS_IN_MINUTE, 0))
+    (Duration::new(digits.parse::<u64>().unwrap() * SECONDS_IN_HOUR, 0))
   )
 );
 
@@ -194,7 +194,7 @@ named!(tenths<CompleteStr, Duration>,
   do_parse!(
     tag!(".") >>
     tenth: single_digit >>
-    (Duration::new(0, tenth as u32 * TENTHS_IN_A_NANOSECOND))
+    (Duration::new(0, tenth as u32 * TENTHS_IN_NANOSECOND))
   )
 );
 
@@ -248,5 +248,34 @@ named!(all<CompleteStr, Duration>,
 fn test_all() {
     assert_eq!(Duration::new(8 * SECONDS_IN_MINUTE + 22, 0),
                all(CompleteStr("8:22")).unwrap().1);
+
+    assert_eq!(Duration::new(1 * SECONDS_IN_MINUTE + 15,
+                             3 * TENTHS_IN_NANOSECOND),
+               all(CompleteStr("1:15.3")).unwrap().1);
+
+    assert_eq!(Duration::new(2 * SECONDS_IN_HOUR + 25 * SECONDS_IN_MINUTE + 36,
+                             0),
+               all(CompleteStr("2:25:36")).unwrap().1);
+
+// TODO: fix    
+//    assert_eq!(Duration::new(20 * SECONDS_IN_MINUTE + 29,
+//                             8 * TENTHS_IN_NANOSECOND),
+//               all(CompleteStr("20:29.8")).unwrap().1);
+
+    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
+               all(CompleteStr("11:06")).unwrap().1);
+
+    assert_eq!(Duration::new(0, 0),
+               all(CompleteStr("0")).unwrap().1);
+
+    assert_eq!(Duration::new(1, 0),
+               all(CompleteStr("1")).unwrap().1);
+
+    assert_eq!(Duration::new(5, 0),
+               all(CompleteStr("05")).unwrap().1);
+
+    assert_eq!(Duration::new(10, 0),
+               all(CompleteStr("10")).unwrap().1);
+
 }
     
