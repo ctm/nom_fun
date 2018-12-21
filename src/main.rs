@@ -212,32 +212,31 @@ fn test_tenths() {
 }
 
 named!(hour_and_minute_prefix<CompleteStr, Duration>,
-  do_parse!(
-    hours: opt!(hour_prefix) >>
-    minutes: double_digit_minute_prefix >>
-    (match hours {
-      None => minutes,
-      Some(hours) => hours + minutes,
-    })
+  alt!(
+    do_parse!(
+      hours: hour_prefix >>
+      minutes: double_digit_minute_prefix >>
+      (hours + minutes)
+    ) |
+    double_digit_minute_prefix
   )
 );
 
 #[test]
 fn test_hour_and_minute_prefix() {
-    println!("HEY: {:?}", hour_and_minute_prefix(CompleteStr("11:06")));
-//    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
-//               hour_and_minute_prefix(CompleteStr("11:06")).unwrap().1);
+    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
+               hour_and_minute_prefix(CompleteStr("11:06")).unwrap().1);
 }
 
 named!(minute_prefix<CompleteStr, Duration>,
   alt!(hour_and_minute_prefix | single_digit_minute_prefix)
 );
 
-//#[test]
-//fn test_minute_prefix() {
-//    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
-//               minute_prefix(CompleteStr("11:06")).unwrap().1);
-//}
+#[test]
+fn test_minute_prefix() {
+    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
+               minute_prefix(CompleteStr("11:06")).unwrap().1);
+}
 
 named!(prefix_and_double_digit_seconds<CompleteStr, Duration>,
   do_parse!(
@@ -250,11 +249,11 @@ named!(prefix_and_double_digit_seconds<CompleteStr, Duration>,
   )
 );
 
-//#[test]
-//fn test_prefix_and_double_digit_seconds() {
-//    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
-//               prefix_and_double_digit_seconds(CompleteStr("11:06")).unwrap().1);
-//}
+#[test]
+fn test_prefix_and_double_digit_seconds() {
+    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
+               prefix_and_double_digit_seconds(CompleteStr("11:06")).unwrap().1);
+}
 
 named!(without_decimal<CompleteStr, Duration>,
   alt!(prefix_and_double_digit_seconds | single_digit_seconds)
@@ -285,14 +284,12 @@ fn test_all() {
                              0),
                all(CompleteStr("2:25:36")).unwrap().1);
 
-// TODO: fix    
-//    assert_eq!(Duration::new(20 * SECONDS_IN_MINUTE + 29,
-//                             8 * TENTHS_IN_NANOSECOND),
-//               all(CompleteStr("20:29.8")).unwrap().1);
+    assert_eq!(Duration::new(20 * SECONDS_IN_MINUTE + 29,
+                             8 * TENTHS_IN_NANOSECOND),
+               all(CompleteStr("20:29.8")).unwrap().1);
 
-// TODO: fix    
-//    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
-//               all(CompleteStr("11:06")).unwrap().1);
+    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
+               all(CompleteStr("11:06")).unwrap().1);
 
     assert_eq!(Duration::new(0, 0),
                all(CompleteStr("0")).unwrap().1);
@@ -306,4 +303,3 @@ fn test_all() {
     assert_eq!(Duration::new(10, 0),
                all(CompleteStr("10")).unwrap().1);
 }
-    
