@@ -1,53 +1,55 @@
-#[macro_use] extern crate nom;
-#[macro_use] extern crate nom_trace;
+#[macro_use]
+extern crate nom;
+#[macro_use]
+extern crate nom_trace;
 
-use std::time::Duration;
 use nom::digit;
 use nom::types::CompleteStr;
+use std::time::Duration;
 
 //adds a thread local storage object to store the trace
 declare_trace!();
 
 pub fn main() {
-  named!(parser<&str, Vec<&str>>,
-    //wrap a parser with tr!() to add a trace point
-    tr!(preceded!(
-      tr!(tag!("data: ")),
-      tr!(delimited!(
-        tag!("("),
-        separated_list!(
-          tr!(tag!(",")),
-          tr!(nom::digit)
-        ),
-        tr!(tag!(")"))
+    named!(parser<&str, Vec<&str>>,
+      //wrap a parser with tr!() to add a trace point
+      tr!(preceded!(
+        tr!(tag!("data: ")),
+        tr!(delimited!(
+          tag!("("),
+          separated_list!(
+            tr!(tag!(",")),
+            tr!(nom::digit)
+          ),
+          tr!(tag!(")"))
+        ))
       ))
-    ))
-  );
+    );
 
-  println!("parsed: {:?}", parser(&"data: (1,2,3)"[..]));
+    println!("parsed: {:?}", parser(&"data: (1,2,3)"[..]));
 
-  // prints the last parser trace
-  print_trace!();
+    // prints the last parser trace
+    print_trace!();
 
-  // the list of trace events can be cleared
-  reset_trace!();
+    // the list of trace events can be cleared
+    reset_trace!();
 }
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Color {
-  pub red:   u8,
-  pub green: u8,
-  pub blue:  u8,
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
 }
 
 #[allow(dead_code)]
 fn from_hex(input: &str) -> Result<u8, std::num::ParseIntError> {
-  u8::from_str_radix(input, 16)
+    u8::from_str_radix(input, 16)
 }
 
 #[allow(dead_code)]
 fn is_hex_digit(c: char) -> bool {
-  c.is_digit(16)
+    c.is_digit(16)
 }
 
 named!(hex_primary<&str, u8>,
@@ -66,13 +68,18 @@ named!(hex_color<&str, Color>,
 
 #[test]
 fn parse_color() {
-  assert_eq!(hex_color("#2F14DF"), Ok(("", Color {
-    red: 47,
-    green: 20,
-    blue: 223,
-  })));
+    assert_eq!(
+        hex_color("#2F14DF"),
+        Ok((
+            "",
+            Color {
+                red: 47,
+                green: 20,
+                blue: 223,
+            }
+        ))
+    );
 }
-
 
 //    8:22
 //    1:15.0
@@ -132,7 +139,7 @@ const TENTHS_IN_NANOSECOND: u32 = NANOSECONDS_IN_SECOND / 10;
 
 named!(hour_prefix<CompleteStr, Duration>,
   do_parse!(
-    digits: digit >>  
+    digits: digit >>
     tag!(":") >>
     (Duration::new(digits.parse::<u64>().unwrap() * SECONDS_IN_HOUR, 0))
   )
@@ -140,8 +147,14 @@ named!(hour_prefix<CompleteStr, Duration>,
 
 #[test]
 fn test_hour_prefix() {
-    assert_eq!(Duration::new(3600, 0), hour_prefix(CompleteStr("1:")).unwrap().1);
-    assert_eq!(Duration::new(36000, 0), hour_prefix(CompleteStr("10:")).unwrap().1);
+    assert_eq!(
+        Duration::new(3600, 0),
+        hour_prefix(CompleteStr("1:")).unwrap().1
+    );
+    assert_eq!(
+        Duration::new(36000, 0),
+        hour_prefix(CompleteStr("10:")).unwrap().1
+    );
 }
 
 named!(zero_through_five<CompleteStr, u8>,
@@ -169,8 +182,10 @@ named!(double_digit_minute_prefix<CompleteStr, Duration>,
 
 #[test]
 fn test_double_digit_minute_prefix() {
-    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
-               double_digit_minute_prefix(CompleteStr("11:06")).unwrap().1);
+    assert_eq!(
+        Duration::new(11 * SECONDS_IN_MINUTE, 0),
+        double_digit_minute_prefix(CompleteStr("11:06")).unwrap().1
+    );
 }
 
 named!(single_digit_minute_prefix<CompleteStr, Duration>,
@@ -206,9 +221,14 @@ named!(tenths<CompleteStr, Duration>,
 
 #[test]
 fn test_tenths() {
-    assert_eq!(Duration::new(0, 900_000_000), tenths(CompleteStr(".9")).unwrap().1);
-    assert_eq!(Duration::new(1, 0), tenths(CompleteStr(".9")).unwrap().1 +
-                                    tenths(CompleteStr(".1")).unwrap().1);
+    assert_eq!(
+        Duration::new(0, 900_000_000),
+        tenths(CompleteStr(".9")).unwrap().1
+    );
+    assert_eq!(
+        Duration::new(1, 0),
+        tenths(CompleteStr(".9")).unwrap().1 + tenths(CompleteStr(".1")).unwrap().1
+    );
 }
 
 named!(hour_and_minute_prefix<CompleteStr, Duration>,
@@ -224,8 +244,10 @@ named!(hour_and_minute_prefix<CompleteStr, Duration>,
 
 #[test]
 fn test_hour_and_minute_prefix() {
-    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
-               hour_and_minute_prefix(CompleteStr("11:06")).unwrap().1);
+    assert_eq!(
+        Duration::new(11 * SECONDS_IN_MINUTE, 0),
+        hour_and_minute_prefix(CompleteStr("11:06")).unwrap().1
+    );
 }
 
 named!(minute_prefix<CompleteStr, Duration>,
@@ -234,8 +256,10 @@ named!(minute_prefix<CompleteStr, Duration>,
 
 #[test]
 fn test_minute_prefix() {
-    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
-               minute_prefix(CompleteStr("11:06")).unwrap().1);
+    assert_eq!(
+        Duration::new(11 * SECONDS_IN_MINUTE, 0),
+        minute_prefix(CompleteStr("11:06")).unwrap().1
+    );
 }
 
 named!(prefix_and_double_digit_seconds<CompleteStr, Duration>,
@@ -251,8 +275,12 @@ named!(prefix_and_double_digit_seconds<CompleteStr, Duration>,
 
 #[test]
 fn test_prefix_and_double_digit_seconds() {
-    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
-               prefix_and_double_digit_seconds(CompleteStr("11:06")).unwrap().1);
+    assert_eq!(
+        Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
+        prefix_and_double_digit_seconds(CompleteStr("11:06"))
+            .unwrap()
+            .1
+    );
 }
 
 named!(without_decimal<CompleteStr, Duration>,
@@ -273,33 +301,36 @@ named!(all<CompleteStr, Duration>,
 
 #[test]
 fn test_all() {
-    assert_eq!(Duration::new(8 * SECONDS_IN_MINUTE + 22, 0),
-               all(CompleteStr("8:22")).unwrap().1);
+    assert_eq!(
+        Duration::new(8 * SECONDS_IN_MINUTE + 22, 0),
+        all(CompleteStr("8:22")).unwrap().1
+    );
 
-    assert_eq!(Duration::new(1 * SECONDS_IN_MINUTE + 15,
-                             3 * TENTHS_IN_NANOSECOND),
-               all(CompleteStr("1:15.3")).unwrap().1);
+    assert_eq!(
+        Duration::new(1 * SECONDS_IN_MINUTE + 15, 3 * TENTHS_IN_NANOSECOND),
+        all(CompleteStr("1:15.3")).unwrap().1
+    );
 
-    assert_eq!(Duration::new(2 * SECONDS_IN_HOUR + 25 * SECONDS_IN_MINUTE + 36,
-                             0),
-               all(CompleteStr("2:25:36")).unwrap().1);
+    assert_eq!(
+        Duration::new(2 * SECONDS_IN_HOUR + 25 * SECONDS_IN_MINUTE + 36, 0),
+        all(CompleteStr("2:25:36")).unwrap().1
+    );
 
-    assert_eq!(Duration::new(20 * SECONDS_IN_MINUTE + 29,
-                             8 * TENTHS_IN_NANOSECOND),
-               all(CompleteStr("20:29.8")).unwrap().1);
+    assert_eq!(
+        Duration::new(20 * SECONDS_IN_MINUTE + 29, 8 * TENTHS_IN_NANOSECOND),
+        all(CompleteStr("20:29.8")).unwrap().1
+    );
 
-    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
-               all(CompleteStr("11:06")).unwrap().1);
+    assert_eq!(
+        Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
+        all(CompleteStr("11:06")).unwrap().1
+    );
 
-    assert_eq!(Duration::new(0, 0),
-               all(CompleteStr("0")).unwrap().1);
+    assert_eq!(Duration::new(0, 0), all(CompleteStr("0")).unwrap().1);
 
-    assert_eq!(Duration::new(1, 0),
-               all(CompleteStr("1")).unwrap().1);
+    assert_eq!(Duration::new(1, 0), all(CompleteStr("1")).unwrap().1);
 
-    assert_eq!(Duration::new(5, 0),
-               all(CompleteStr("05")).unwrap().1);
+    assert_eq!(Duration::new(5, 0), all(CompleteStr("05")).unwrap().1);
 
-    assert_eq!(Duration::new(10, 0),
-               all(CompleteStr("10")).unwrap().1);
+    assert_eq!(Duration::new(10, 0), all(CompleteStr("10")).unwrap().1);
 }
