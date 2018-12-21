@@ -101,6 +101,8 @@ fn parse_color() {
 
 const SECONDS_IN_MINUTE: u64 = 60;
 const MINUTES_IN_HOUR: u64 = 60;
+const NANOSECONDS_IN_SECOND: u32 = 1_000_000_000;
+const TENTHS_IN_A_NANOSECOND: u32 = NANOSECONDS_IN_SECOND / 10;
 
 // So, nom::digit recognizes one *or more* digits.  I don't yet know how
 // to recognize exactly one digit.  Ugh!
@@ -139,4 +141,65 @@ named!(hour_prefix<&str, Duration>,
 fn test_hour_prefix() {
     assert_eq!(Duration::new(3600, 0), hour_prefix("1:").unwrap().1);
     assert_eq!(Duration::new(36000, 0), hour_prefix("10:").unwrap().1);
+}
+
+named!(zero_through_five<&str, u8>,
+  do_parse!(
+    digit: one_of!("012345") >>
+    (digit as u8 - b'0')
+  )
+);
+
+named!(single_digit<&str, u8>,
+  do_parse!(
+    digit: one_of!("0123456789") >>
+    (digit as u8 - b'0')
+  )
+);
+
+named!(double_digit_minute_prefix<&str, Duration>,
+  do_parse!(
+    tens: zero_through_five >>
+    ones: single_digit >>
+    tag!(":") >>
+    (Duration::new(((tens as u64 * 10) + ones as u64) * SECONDS_IN_MINUTE, 0))
+  )
+);
+
+named!(single_digit_minute_prefix<&str, Duration>,
+  do_parse!(
+    ones: single_digit >>
+    tag!(":") >>
+    (Duration::new(ones as u64 * SECONDS_IN_MINUTE, 0))
+  )
+);
+
+named!(double_digit_seconds<&str, Duration>,
+  do_parse!(
+    tens: zero_through_five >>
+    ones: single_digit >>
+    (Duration::new((tens as u64 * 10) + ones as u64, 0))
+  )
+);
+
+named!(single_digit_seconds<&str, Duration>,
+  do_parse!(
+    ones: single_digit >>
+    (Duration::new(ones as u64, 0))
+  )
+);
+
+named!(tenths<&str, Duration>,
+  do_parse!(
+    tag!(".") >>
+    tenth: single_digit >>
+    (Duration::new(0, tenth as u32 * TENTHS_IN_A_NANOSECOND))
+  )
+);
+
+#[test]
+fn test_tenths() {
+    assert_eq!(Duration::new(0, 900_000_000), tenths(".9").unwrap().1);
+    assert_eq!(Duration::new(1, 0), tenths(".9").unwrap().1 +
+                                    tenths(".1").unwrap().1);
 }
