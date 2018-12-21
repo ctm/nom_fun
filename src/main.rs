@@ -167,6 +167,12 @@ named!(double_digit_minute_prefix<CompleteStr, Duration>,
   )
 );
 
+#[test]
+fn test_double_digit_minute_prefix() {
+    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
+               double_digit_minute_prefix(CompleteStr("11:06")).unwrap().1);
+}
+
 named!(single_digit_minute_prefix<CompleteStr, Duration>,
   do_parse!(
     ones: single_digit >>
@@ -216,9 +222,22 @@ named!(hour_and_minute_prefix<CompleteStr, Duration>,
   )
 );
 
+#[test]
+fn test_hour_and_minute_prefix() {
+    println!("HEY: {:?}", hour_and_minute_prefix(CompleteStr("11:06")));
+//    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
+//               hour_and_minute_prefix(CompleteStr("11:06")).unwrap().1);
+}
+
 named!(minute_prefix<CompleteStr, Duration>,
   alt!(hour_and_minute_prefix | single_digit_minute_prefix)
 );
+
+//#[test]
+//fn test_minute_prefix() {
+//    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE, 0),
+//               minute_prefix(CompleteStr("11:06")).unwrap().1);
+//}
 
 named!(prefix_and_double_digit_seconds<CompleteStr, Duration>,
   do_parse!(
@@ -230,6 +249,12 @@ named!(prefix_and_double_digit_seconds<CompleteStr, Duration>,
     })
   )
 );
+
+//#[test]
+//fn test_prefix_and_double_digit_seconds() {
+//    assert_eq!(Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
+//               prefix_and_double_digit_seconds(CompleteStr("11:06")).unwrap().1);
+//}
 
 named!(without_decimal<CompleteStr, Duration>,
   alt!(prefix_and_double_digit_seconds | single_digit_seconds)
