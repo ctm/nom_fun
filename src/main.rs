@@ -5,6 +5,8 @@ use nom::digit;
 use nom::types::CompleteStr;
 use std::time::Duration;
 
+mod fit;
+
 pub fn main() {
     // For now, this is just a call so we don't get complaints about unused
     // constants.
