@@ -1,17 +1,16 @@
-fn fit_crc_get16(mut crc: u16, byte: u8) -> u16 {
+fn fit_crc_get16(crc: u16, byte: u8) -> u16 {
     static CRC_TABLE: [u16; 16] = [
       0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
       0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400
     ];
     let byte = usize::from(byte);
-    let (low, high) = (byte & 0xf, (byte >> 4) & 0xf);
+    let (low, high) = (byte & 0xF, (byte >> 4) & 0xF);
 
-    let yyy_crc = (crc >> 4) & 0x0fff;
-    crc = yyy_crc ^ CRC_TABLE[usize::from(crc & 0xf)] ^ CRC_TABLE[low];
-
-    let zzz_crc = (crc >> 4) & 0x0fff;
+    let crc_0 = (crc >> 4) & 0x0FFF;
+    let crc_1 = crc_0 ^ CRC_TABLE[usize::from(crc & 0xF)] ^ CRC_TABLE[low];
+    let crc_2 = (crc_1 >> 4) & 0x0FFF;
     
-    zzz_crc ^ CRC_TABLE[usize::from(crc & 0xf)] ^ CRC_TABLE[high]
+    crc_2 ^ CRC_TABLE[usize::from(crc_1 & 0xF)] ^ CRC_TABLE[high]
 }
 
 pub fn fit_crc_calc16(data: &[u8]) -> u16 {
@@ -20,7 +19,9 @@ pub fn fit_crc_calc16(data: &[u8]) -> u16 {
 
 #[test]
 fn test_fit_crc_calc16() {
-    static FED: [u8; 3] = [0xf, 0xe, 0xd];
+    // Nothing special about 0xFED, other than the fact that I've been playing
+    // with nom.
+    static FED: [u8; 3] = [0xF, 0xE, 0xD];
 
     assert_eq!(0, fit_crc_calc16(b""));
     // NOTE: I compiled the C code from the Fit SDK and tested these slices.
