@@ -3,15 +3,15 @@ fn fit_crc_get16(mut crc: u16, byte: u8) -> u16 {
       0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
       0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400
     ];
-    let mut tmp = CRC_TABLE[usize::from(crc & 0xf)];
-    crc = (crc >> 4) & 0x0fff;
-    crc = crc ^ tmp ^ CRC_TABLE[usize::from(byte & 0xf)];
+    let byte = usize::from(byte);
+    let (low, high) = (byte & 0xf, (byte >> 4) & 0xf);
 
-    tmp = CRC_TABLE[usize::from(crc & 0xf)];
-    crc = (crc >> 4) & 0x0fff;
-    crc =  crc ^ tmp ^ CRC_TABLE[usize::from((byte >> 4) & 0xf)];
+    let yyy_crc = (crc >> 4) & 0x0fff;
+    crc = yyy_crc ^ CRC_TABLE[usize::from(crc & 0xf)] ^ CRC_TABLE[low];
+
+    let zzz_crc = (crc >> 4) & 0x0fff;
     
-    crc
+    zzz_crc ^ CRC_TABLE[usize::from(crc & 0xf)] ^ CRC_TABLE[high]
 }
 
 pub fn fit_crc_calc16(data: &[u8]) -> u16 {
