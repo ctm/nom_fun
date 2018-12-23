@@ -13,7 +13,8 @@ pub fn main() {
             Some(None) => println!("Non-UTF8 extension"),
             Some(Some("fit")) => println!("FIT"),
             Some(Some("gpx")) => {
-                let gpx = Gpx::from_path(&path);
+                let mut string = String::new();
+                let gpx = gpx::from_path(&path, &mut string);
                 println!("{:?}", gpx);
             },
             Some(Some("kml")) => println!("KML"),
