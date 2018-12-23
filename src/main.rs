@@ -1,9 +1,16 @@
 extern crate nom_fun;
 
-//use nom_fun::fit::fit_crc_calc16;
+use std::path::Path;
+use std::ffi::OsStr;
 
 pub fn main() {
-//    static FED: [u8; 3] = [0xF, 0xE, 0xD];
-
-//    println!("{}", fit_crc_calc16(&FED));
+    for filename in std::env::args().skip(1) {
+        let path = Path::new(&filename);
+        match path.extension().map(|extension| extension.to_str()) {
+            None => println!("No extension"),
+            Some(None) => println!("Non-UTF8 extension"),
+            Some(Some("gpx")) => println!("GPX"),
+            Some(Some(extension)) => println!("Unknown extension {}", extension),
+        }
+    }
 }
