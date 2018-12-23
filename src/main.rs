@@ -1,7 +1,9 @@
 extern crate nom_fun;
 
+mod gpx;
+
 use std::path::Path;
-use std::ffi::OsStr;
+use crate::gpx::Gpx;
 
 pub fn main() {
     for filename in std::env::args().skip(1) {
@@ -9,7 +11,14 @@ pub fn main() {
         match path.extension().map(|extension| extension.to_str()) {
             None => println!("No extension"),
             Some(None) => println!("Non-UTF8 extension"),
-            Some(Some("gpx")) => println!("GPX"),
+            Some(Some("fit")) => println!("FIT"),
+            Some(Some("gpx")) => {
+                let gpx = Gpx::from_path(&path);
+                println!("{:?}", gpx);
+            },
+            Some(Some("kml")) => println!("KML"),
+            Some(Some("tcx")) => println!("TCX"),
+            Some(Some("xlsx")) => println!("XLSX"),
             Some(Some(extension)) => println!("Unknown extension {}", extension),
         }
     }

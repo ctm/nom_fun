@@ -1,3 +1,9 @@
+struct Fit {
+}
+
+impl Fit {
+}
+
 fn fit_crc_get16(crc: u16, byte: u8) -> u16 {
     static CRC_TABLE: [u16; 16] = [
       0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
