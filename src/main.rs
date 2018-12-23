@@ -14,7 +14,7 @@ pub fn main() {
             Some(Some("fit")) => println!("FIT"),
             Some(Some("gpx")) => {
                 let mut string = String::new();
-                let gpx = gpx::from_path(&path, &mut string);
+                let gpx = Gpx::from_path(&path, &mut string);
                 println!("{:?}", gpx);
             },
             Some(Some("kml")) => println!("KML"),
