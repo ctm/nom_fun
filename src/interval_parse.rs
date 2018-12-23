@@ -185,7 +185,7 @@ named!(without_decimal<CompleteStr, Duration>,
 );
 
 // TODO: all is a horrible name!
-named!(all<CompleteStr, Duration>,
+named!(pub all<CompleteStr, Duration>,
   do_parse!(
     seconds: without_decimal >>
     tenths: opt!(tenths) >>

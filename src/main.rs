@@ -1,8 +1,9 @@
-#[macro_use]
-extern crate nom;
+extern crate nom_fun;
 
-mod fit;
-mod interval_parse;
+//use nom_fun::fit::fit_crc_calc16;
 
 pub fn main() {
+//    static FED: [u8; 3] = [0xF, 0xE, 0xD];
+
+//    println!("{}", fit_crc_calc16(&FED));
 }
