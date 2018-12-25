@@ -1,14 +1,13 @@
 use nom::digit;
 use nom::types::CompleteStr;
-use std::time::Duration;
+
+use crate::duration::Duration;
 
 //    8:22
 //    1:15.0
 // 2:25:36
 //   20:29.8
 //   11:06
-
-// What about
 //       0
 //       1
 //      05
@@ -28,9 +27,8 @@ use std::time::Duration;
 // WITHOUT_DECIMAL = /#{PREFIX_AND_DOUBLE_DIGIT_SECONDS}|#{SINGLE_DIGIT_SECONDS}/
 // ALL = /#{WITHOUT_DECIMAL}#{TENTHS}?/
 
-const SECONDS_IN_MINUTE: u64 = 60;
-const MINUTES_IN_HOUR: u64 = 60;
-const SECONDS_IN_HOUR: u64 = SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
+const SECONDS_IN_MINUTE: u64 = crate::duration::SECONDS_IN_MINUTE;
+const SECONDS_IN_HOUR: u64 = crate::duration::SECONDS_IN_HOUR;
 const NANOSECONDS_IN_SECOND: u32 = 1_000_000_000;
 const TENTHS_IN_NANOSECOND: u32 = NANOSECONDS_IN_SECOND / 10;
 
@@ -184,8 +182,9 @@ named!(without_decimal<CompleteStr, Duration>,
   alt!(prefix_and_double_digit_seconds | single_digit_seconds)
 );
 
-// TODO: all is a horrible name!
-named!(pub all<CompleteStr, Duration>,
+// There's probably a better name than duration, but then again, calling
+// this module interval_parse is sub-optimal, too.
+named!(pub duration<CompleteStr, Duration>,
   do_parse!(
     seconds: without_decimal >>
     tenths: opt!(tenths) >>
@@ -197,20 +196,20 @@ named!(pub all<CompleteStr, Duration>,
 );
 
 #[test]
-fn test_all() {
+fn test_duration() {
     assert_eq!(
         Duration::new(8 * SECONDS_IN_MINUTE + 22, 0),
-        all(CompleteStr("8:22")).unwrap().1
+        duration(CompleteStr("8:22")).unwrap().1
     );
 
     assert_eq!(
         Duration::new(1 * SECONDS_IN_MINUTE + 15, 3 * TENTHS_IN_NANOSECOND),
-        all(CompleteStr("1:15.3")).unwrap().1
+        duration(CompleteStr("1:15.3")).unwrap().1
     );
 
     assert_eq!(
         Duration::new(2 * SECONDS_IN_HOUR + 25 * SECONDS_IN_MINUTE + 36, 0),
-        all(CompleteStr("2:25:36")).unwrap().1
+        duration(CompleteStr("2:25:36")).unwrap().1
     );
 
     assert_eq!(
@@ -218,24 +217,65 @@ fn test_all() {
             2 * SECONDS_IN_HOUR + 25 * SECONDS_IN_MINUTE + 36,
             7 * TENTHS_IN_NANOSECOND
         ),
-        all(CompleteStr("2:25:36.7")).unwrap().1
+        duration(CompleteStr("2:25:36.7")).unwrap().1
     );
 
     assert_eq!(
         Duration::new(20 * SECONDS_IN_MINUTE + 29, 8 * TENTHS_IN_NANOSECOND),
-        all(CompleteStr("20:29.8")).unwrap().1
+        duration(CompleteStr("20:29.8")).unwrap().1
     );
 
     assert_eq!(
         Duration::new(11 * SECONDS_IN_MINUTE + 6, 0),
-        all(CompleteStr("11:06")).unwrap().1
+        duration(CompleteStr("11:06")).unwrap().1
     );
 
-    assert_eq!(Duration::new(0, 0), all(CompleteStr("0")).unwrap().1);
+    assert_eq!(Duration::new(0, 0), duration(CompleteStr("0")).unwrap().1);
 
-    assert_eq!(Duration::new(1, 0), all(CompleteStr("1")).unwrap().1);
+    assert_eq!(Duration::new(1, 0), duration(CompleteStr("1")).unwrap().1);
 
-    assert_eq!(Duration::new(5, 0), all(CompleteStr("05")).unwrap().1);
+    assert_eq!(Duration::new(5, 0), duration(CompleteStr("05")).unwrap().1);
 
-    assert_eq!(Duration::new(10, 0), all(CompleteStr("10")).unwrap().1);
+    assert_eq!(Duration::new(10, 0), duration(CompleteStr("10")).unwrap().1);
 }
+
+named!(pace_duration_pair<CompleteStr, (Duration, Duration)>,
+  do_parse!(
+    pace: duration >>
+    char!('(') >>
+    duration: duration >>
+    char!(')') >>
+    ((pace, duration))
+  )
+);
+
+#[test]
+fn test_pace_duration_pair() {
+    assert_eq!(
+        (Duration::new(8 * SECONDS_IN_MINUTE +  9, 0),
+         Duration::new(1 * SECONDS_IN_MINUTE + 15, 0)),
+        pace_duration_pair(CompleteStr("8:09(1:15.0)")).unwrap().1
+    );
+}
+
+named!(eventual_pace_duration_pair<CompleteStr, (Duration, Duration)>,
+  do_parse!(
+    pair: many_till!(take!(1), pace_duration_pair) >>
+    (match pair {
+      (_, pd_pair) => pd_pair
+    })
+  )
+);
+
+#[test]
+fn test_eventual_pace_duration_pair() {
+    assert_eq!(
+        (Duration::new(8 * SECONDS_IN_MINUTE +  9, 0),
+         Duration::new(1 * SECONDS_IN_MINUTE + 15, 0)),
+        eventual_pace_duration_pair(CompleteStr("12/24 8:09(1:15.0)")).unwrap().1
+    );
+}
+
+named!(pub many_pace_duration_pairs<CompleteStr, Vec<(Duration, Duration)>>,
+  many0!(eventual_pace_duration_pair)
+);

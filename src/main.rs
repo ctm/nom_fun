@@ -1,15 +1,17 @@
 extern crate nom_fun;
 
-mod gpx;
+mod interval;
 
 use std::path::Path;
-use crate::gpx::Gpx;
+use nom_fun::gpx::Gpx;
 
 pub fn main() {
     for filename in std::env::args().skip(1) {
         let path = Path::new(&filename);
         match path.extension().map(|extension| extension.to_str()) {
-            None => println!("No extension"),
+            None => {
+                println!("Average: {:.1}", interval::average_from_path(&path));
+            }
             Some(None) => println!("Non-UTF8 extension"),
             Some(Some("fit")) => println!("FIT"),
             Some(Some("gpx")) => {
