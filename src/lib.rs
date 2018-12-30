@@ -1,6 +1,8 @@
 #[macro_use] extern crate nom;
 #[macro_use] extern crate custom_derive;
 #[macro_use] extern crate newtype_derive;
+#[macro_use] extern crate lazy_static;
+extern crate time;
 
 pub mod fit;
 pub mod gpx;

@@ -20,27 +20,63 @@ impl fmt::Display for Duration {
 
         let precision = match f.precision() {
             Some(p) => p,
-            None => 0
+            None => 0,
         };
 
+        let width = match f.width() {
+            Some(w) => w,
+            None => 0,
+        };
+
+        let mut result = String::new();
+
         if hours > 0 {
-            write!(f, "{}:{:02}:{:02}", hours, minutes, seconds)?;
+            result.push_str(&format!("{}:{:02}:{:02}", hours, minutes, seconds));
         } else if minutes > 0 {
-            write!(f, "{}:{:02}", minutes, seconds)?;
+            result.push_str(&format!("{}:{:02}", minutes, seconds));
         } else {
-            write!(f, "{}", seconds)?;
+            result.push_str(&format!("{}", seconds));
         }
 
         if tenths > 0 || precision > 0 {
-            write!(f, ".{}", tenths)?;
+            result.push_str(&format!(".{}", tenths));
         }
-        write!(f, "")
+        write!(f, "{:>width$}", result, width=width)
     }
+}
+
+#[test]
+fn test_display() {
+    assert_eq!(format!("{:7}", Duration::new(35, 0)), "     35");
+    assert_eq!(format!("{:7}", Duration::new_min_sec(49, 32)), "  49:32");
+    assert_eq!(format!("{:7.1}", Duration::new_min_sec_tenths(9, 12, 3)), " 9:12.3");
 }
 
 impl Duration {
     pub fn new(secs: u64, nanos: u32) -> Self {
         Duration(std::time::Duration::new(secs, nanos))
+    }
+
+    pub fn new_min_sec(mins: u64, secs: u8) -> Self {
+        Self::new_min_sec_tenths(mins, secs, 0)
+    }
+
+    pub fn new_min_sec_tenths(mins: u64, secs: u8, tenths: u8) -> Self {
+        Self::new(mins * SECONDS_IN_MINUTE + u64::from(secs), u32::from(tenths) * 100_000_000)
+    }
+}
+
+impl From<f64> for Duration {
+    fn from(f64: f64) -> Self {
+        Self::new(f64.trunc() as u64, (f64.fract() * 1e9) as u32)
+    }
+}
+
+impl From<time::Duration> for Duration {
+    fn from(duration: time::Duration) -> Self {
+        let nanos = duration.num_nanoseconds().unwrap() % 1_000_000_000;
+
+        Self::new(duration.num_seconds() as u64, nanos as u32)
     }
 }
 

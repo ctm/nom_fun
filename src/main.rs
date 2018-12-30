@@ -29,7 +29,8 @@ pub fn main() {
             Some(Some("fit")) => println!("FIT"),
             Some(Some("gpx")) => {
                 let gpx = Gpx::from_string(&contents);
-                println!("{:?}", gpx);
+                // println!("{:?}", gpx);
+                gpx.analyze();
             },
             Some(Some("kml")) => println!("KML"),
             Some(Some("tcx")) => println!("TCX"),
