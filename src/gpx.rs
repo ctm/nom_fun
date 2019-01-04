@@ -10,10 +10,6 @@ use std::cmp::Ordering;
 // TODO: figure out the interval duration looking for abrupt changes in
 //       speed.  Consider having a constant like 5 for the common factor
 //       that all intervals will have.
-const INTERVAL_SECONDS: usize = 75;
-lazy_static! {
-    static ref INTERVAL_DURATION: Duration = Duration::seconds(INTERVAL_SECONDS as i64);
-}
 
 const METERS_PER_MILE: f64 = 1609.344;
 const SECONDS_PER_MINUTE: f64 = 60.0;
@@ -143,7 +139,12 @@ impl Gpx {
     // couple of parameters to the detection routine that I can get by
     // just with the gain fudge.
     fn gain_fudge(gain_per_second: f64) -> f64 {
-        1.0 + gain_per_second * 0.15 / 0.062_511
+        // The min here is mostly due to the possibility of a false
+        // value due to the way elevation works (at least with my
+        // Ambit 3).  Specifically, I added it after trying to suss
+        // the intervals out of my 2018_07_02 file and having it fail
+        // due to an incorrect gain.
+        1.0 + (gain_per_second  / 0.062_511).min(1.0) * 0.15
     }
 
     // TODO: get rid of loss_fudge once the parameterized version of
@@ -156,10 +157,11 @@ impl Gpx {
         METERS_PER_MILE / SECONDS_PER_MINUTE / meters_per_second
     }
 
-    fn potential_intervals(&self) -> BinaryHeap<Interval> {
+    fn potential_intervals(&self, duration: u8) -> BinaryHeap<Interval> {
         let mut intervals = BinaryHeap::<Interval>::new();
+        let interval_duration = Duration::seconds(i64::from(duration));
 
-        for window in self.trkpts.windows(INTERVAL_SECONDS+1) {
+        for window in self.trkpts.windows(duration as usize + 1) {
             let mut window = window.iter();
             if let Some(trkpt) = window.next() {
                 let start = trkpt.time;
@@ -169,7 +171,7 @@ impl Gpx {
                 let mut gain = 0.0;
                 let mut loss = 0.0;
 
-                while duration < *INTERVAL_DURATION {
+                while duration < interval_duration {
                     if let Some(trkpt) = window.next() {
                         if let Some(meters_per_second) = trkpt.meters_per_second {
                             let vertical_mps = match trkpt.vertical_mps {
@@ -195,7 +197,7 @@ impl Gpx {
                     }
                 }
 
-                if duration >= *INTERVAL_DURATION {
+                if duration >= interval_duration {
                     let stop = start + duration;
                     let f64_duration = Self::f64_duration(&duration);
                     let meters_per_second = meters / f64_duration;
@@ -226,24 +228,82 @@ impl Gpx {
     }
 
     fn dump(&self, intervals: &[Interval]) {
-        let mut sorted = intervals.to_vec();
-        sorted.sort_by_key(|i| i.start);
-
         let start = self.trkpts.first().unwrap().time;
+        // TODO: document total_pace_durations
+        let mut total_pace_durations = crate::duration::Duration::new(0, 0);
+        let mut total_elapsed = crate::duration::Duration::new(0, 0);
 
-        for interval in sorted {
+        for interval in intervals {
             let seconds_per_mile = interval.minutes_per_mile * SECONDS_PER_MINUTE;
             let pace = crate::duration::Duration::from(seconds_per_mile);
             let elapsed = crate::duration::Duration::from(interval.start - start);
+            total_pace_durations += pace * elapsed;
+            total_elapsed += elapsed;
             let rank = interval.rank;
             let gain = interval.gain;
             let loss = interval.loss;
             println!("{:.6} {:7} {:7.1} {:.5} {:.5}", rank, elapsed, pace, gain, loss);
         }
+
+        let average = total_pace_durations / total_elapsed.as_secs() as u32;
+        println!("Average: {}", average);
     }
 
-    pub fn analyze(&self) {
-        let mut heap = self.potential_intervals();
+    fn trim(intervals: &mut Vec<Interval>, count: u8) {
+        let mut len = intervals.len() as u8;
+
+        while len > count {
+            if intervals.first().unwrap().rank < intervals.last().unwrap().rank {
+                intervals.remove(0);
+            } else {
+                intervals.pop();
+            }
+            len -= 1;
+        }
+    }
+
+    fn restrict_to_actual_intervals(intervals: &mut Vec<Interval>, span: f32, count: u8) {
+        let span_with_slop = Duration::seconds((span * 1.50) as i64);
+        let mut results = Vec::with_capacity(count as usize);
+        let best = intervals[0].clone();
+
+        intervals.sort_by_key(|i| i.start);
+
+        let mut start_idx = intervals.iter()
+                                      .position(|interval|
+                                                *interval == best).unwrap();
+        let mut stop_idx = start_idx + 1;
+
+        let mut expected_start = best.start - span_with_slop;
+        let min_rank = best.rank * 0.70; // TODO: document!
+        while start_idx > 0 &&
+            intervals[start_idx-1].start >= expected_start &&
+            intervals[start_idx-1].rank >= min_rank {
+            start_idx -= 1;
+            expected_start = intervals[start_idx].start - span_with_slop;
+        }
+
+        let max_stop_idx = intervals.len();
+        expected_start = best.start + span_with_slop;
+        while stop_idx < max_stop_idx &&
+              intervals[stop_idx].start <= expected_start &&
+              intervals[stop_idx].rank >= min_rank {
+            stop_idx += 1;
+            if stop_idx < max_stop_idx {
+                expected_start = intervals[stop_idx].start + span_with_slop;
+            }
+        }
+
+        results.extend_from_slice(&intervals[start_idx..stop_idx as usize]);
+        // Consider adjusting start_idx and stop_idx before extend_from_slice
+        // since adding the intervals to results and then trimming results is
+        // less efficient.  It certainly doesn't matter here, but still...
+        Self::trim(&mut results, count);
+        *intervals = results;
+    }
+
+    pub fn analyze(&self, duration: u8, rest: u8, count: u8) {
+        let mut heap = self.potential_intervals(duration);
         let mut intervals = Vec::new();
 
         while let Some(interval) = heap.pop() {
@@ -252,6 +312,15 @@ impl Gpx {
             }
         }
 
-        self.dump(&intervals[0..14]);
+        Self::restrict_to_actual_intervals(&mut intervals,
+                                           f32::from(duration) + f32::from(rest),
+                                           count);
+
+        self.dump(&intervals);
+
+        if intervals.len() != usize::from(count) {
+            panic!("Was told to find {} intervals, but found {}", count,
+                   intervals.len());
+        }
     }
 }

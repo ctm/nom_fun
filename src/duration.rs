@@ -6,7 +6,7 @@ pub const SECONDS_IN_HOUR: u64 = MINUTES_IN_HOUR * SECONDS_IN_MINUTE;
 
 custom_derive! {
     // Can't use NewtypeSum w/o unstable
-    #[derive(Debug, PartialEq, NewtypeAdd, NewtypeDiv(u32), NewtypeDeref)]
+    #[derive(Copy, Clone, Debug, PartialEq, NewtypeAdd, NewtypeDiv(u32), NewtypeDeref)]
     pub struct Duration(std::time::Duration);
 }
 
@@ -83,5 +83,25 @@ impl From<time::Duration> for Duration {
 impl<'a> std::iter::Sum<&'a Duration> for Duration {
     fn sum<I: Iterator<Item=&'a Duration>>(iter: I) -> Duration {
         Duration(iter.map(|d| d.0).sum())
+    }
+}
+
+impl Into<f64> for Duration {
+    fn into(self) -> f64 {
+        self.as_secs() as f64 + f64::from(self.subsec_nanos()) * 1e-9
+    }
+}
+
+impl std::ops::Mul for Duration {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        Self::from(Into::<f64>::into(self) * Into::<f64>::into(rhs))
+    }
+}
+
+impl std::ops::AddAssign for Duration {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }

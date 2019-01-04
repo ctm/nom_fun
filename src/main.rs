@@ -1,12 +1,16 @@
 extern crate nom_fun;
 
 mod interval;
+mod opt;
+
+use crate::opt::Opt;
 
 use std::path::Path;
 use std::fs;
 use std::io::Read;
 
 use nom_fun::gpx::Gpx;
+use structopt::StructOpt;
 
 // TODO: error handling
 fn contents_from(path: &Path) -> String {
@@ -18,8 +22,9 @@ fn contents_from(path: &Path) -> String {
 }
 
 pub fn main() {
-    for filename in std::env::args().skip(1) {
-        let path = Path::new(&filename);
+    let opt = Opt::from_args();
+
+    for path in opt.files {
         let contents = contents_from(&path);
         match path.extension().map(|extension| extension.to_str()) {
             None => {
@@ -30,7 +35,8 @@ pub fn main() {
             Some(Some("gpx")) => {
                 let gpx = Gpx::from_string(&contents);
                 // println!("{:?}", gpx);
-                gpx.analyze();
+                gpx.analyze(opt.interval_duration, opt.interval_rest,
+                            opt.interval_count);
             },
             Some(Some("kml")) => println!("KML"),
             Some(Some("tcx")) => println!("TCX"),

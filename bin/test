@@ -1,0 +1,56 @@
+#! /bin/bash
+
+# Relying on the gpx files living in ~/Downloads is poor form.  However,
+# gpx files are relatively large and I don't want them taking up room in
+# the repository, since a fit file is about one twentieth the size.
+#
+# OTOH, I don't yet parse fit files so I don't even know that the same info
+# is in them.  My suspicion is that if there is different data, the fit is
+# actually more accurate.
+
+set -e
+
+cargo build --release
+time target/release/nom_fun ~/Downloads/Move_2018_06_25_06_26_50_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_07_02_07_10_43_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_07_09_06_05_05_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_07_16_06_18_28_Running.gpx
+
+# The following expects 9 intervals because I accidentally ran on too long
+# and that basically screws up everything.  It may make sense to eventually
+# fix the code to find 12 intervals, but it's pretty low priority, seeing
+# how the problem is so uncommon.
+time target/release/nom_fun ~/Downloads/Move_2018_07_23_06_14_15_Running.gpx -c 9 && echo TODO: 2018_07_23 really is 12 intervals
+
+time target/release/nom_fun ~/Downloads/Move_2018_07_30_06_33_11_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_08_06_07_32_35_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_08_13_05_56_22_Running.gpx -c 3
+
+# This was a taper run and I wound up doing six intervals in the general area
+# where I do them and then did two "bonus" intervals.  However, one of the
+# bonus intervals was up barstow which has a fair amount of gain.  I had
+# also rested a lot when I started it, so consequently my interval identifier
+# finds that as the fastest and then looks nearby for others.  That results
+# in a second interval found that really is not an interval.
+#
+# If I ever adjust the detection code to not require all intervals to be
+# near one another, this one will be a nice test case.
+time target/release/nom_fun ~/Downloads/Move_2018_08_27_05_56_41_Running.gpx -c 1 && echo TODO: 2018_08_27 really is 6 intervals
+
+time target/release/nom_fun ~/Downloads/Move_2018_09_02_06_32_15_Running.gpx -c 3
+time target/release/nom_fun ~/Downloads/Move_2018_09_17_07_12_49_Running.gpx -c 3
+time target/release/nom_fun ~/Downloads/Move_2018_09_24_07_12_47_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_10_01_05_07_44_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_10_15_08_23_36_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_10_22_08_26_40_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_11_05_06_29_53_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_11_12_06_23_36_Running.gpx
+echo From here on the intervals were done with my pack
+time target/release/nom_fun ~/Downloads/Move_2018_11_19_06_51_57_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_11_26_06_48_59_Running.gpx -c 13
+time target/release/nom_fun ~/Downloads/Move_2018_12_03_07_00_48_Running.gpx -c 13
+time target/release/nom_fun ~/Downloads/Move_2018_12_10_08_08_47_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2018_12_17_06_59_29_Running.gpx -c 13
+time target/release/nom_fun ~/Downloads/Move_2018_12_24_07_29_07_Running.gpx -c 13
+time target/release/nom_fun ~/Downloads/Move_2018_12_31_07_29_28_Running.gpx
+time target/release/nom_fun ~/Downloads/Move_2019_01_07_06_52_08_Running.gpx
