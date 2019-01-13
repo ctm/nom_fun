@@ -35,7 +35,7 @@ impl fmt::Display for Duration {
         } else if minutes > 0 {
             result.push_str(&format!("{}:{:02}", minutes, seconds));
         } else {
-            result.push_str(&format!("{}", seconds));
+            result.push_str(&seconds.to_string());
         }
 
         if tenths > 0 || precision > 0 {
