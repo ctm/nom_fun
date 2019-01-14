@@ -28,7 +28,9 @@ pub fn main() {
         let contents = contents_from(&path);
         match path.extension().map(|extension| extension.to_str()) {
             None => {
-                println!("Average: {:.1}", interval::average_from_string(&contents));
+                if let Some(average) = interval::average_from_string(&contents) {
+                    println!("Average: {:.1}", average);
+                }
             }
             Some(None) => println!("Non-UTF8 extension"),
             Some(Some("fit")) => println!("FIT"),
