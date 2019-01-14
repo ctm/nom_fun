@@ -237,6 +237,9 @@ fn test_duration() {
     assert_eq!(Duration::new(5, 0), duration(CompleteStr("05")).unwrap().1);
 
     assert_eq!(Duration::new(10, 0), duration(CompleteStr("10")).unwrap().1);
+
+    assert_eq!(Duration::new(8 * SECONDS_IN_MINUTE + 1, 6 * TENTHS_IN_NANOSECOND),
+               duration(CompleteStr("8:01.6")).unwrap().1);
 }
 
 named!(pace_duration_pair<CompleteStr, (Duration, Duration)>,
