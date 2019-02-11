@@ -238,8 +238,10 @@ fn test_duration() {
 
     assert_eq!(Duration::new(10, 0), duration(CompleteStr("10")).unwrap().1);
 
-    assert_eq!(Duration::new(8 * SECONDS_IN_MINUTE + 1, 6 * TENTHS_IN_NANOSECOND),
-               duration(CompleteStr("8:01.6")).unwrap().1);
+    assert_eq!(
+        Duration::new(8 * SECONDS_IN_MINUTE + 1, 6 * TENTHS_IN_NANOSECOND),
+        duration(CompleteStr("8:01.6")).unwrap().1
+    );
 }
 
 named!(pace_duration_pair<CompleteStr, (Duration, Duration)>,
@@ -255,8 +257,10 @@ named!(pace_duration_pair<CompleteStr, (Duration, Duration)>,
 #[test]
 fn test_pace_duration_pair() {
     assert_eq!(
-        (Duration::new(8 * SECONDS_IN_MINUTE +  9, 0),
-         Duration::new(1 * SECONDS_IN_MINUTE + 15, 0)),
+        (
+            Duration::new(8 * SECONDS_IN_MINUTE + 9, 0),
+            Duration::new(1 * SECONDS_IN_MINUTE + 15, 0)
+        ),
         pace_duration_pair(CompleteStr("8:09(1:15.0)")).unwrap().1
     );
 }
@@ -273,9 +277,13 @@ named!(eventual_pace_duration_pair<CompleteStr, (Duration, Duration)>,
 #[test]
 fn test_eventual_pace_duration_pair() {
     assert_eq!(
-        (Duration::new(8 * SECONDS_IN_MINUTE +  9, 0),
-         Duration::new(1 * SECONDS_IN_MINUTE + 15, 0)),
-        eventual_pace_duration_pair(CompleteStr("12/24 8:09(1:15.0)")).unwrap().1
+        (
+            Duration::new(8 * SECONDS_IN_MINUTE + 9, 0),
+            Duration::new(1 * SECONDS_IN_MINUTE + 15, 0)
+        ),
+        eventual_pace_duration_pair(CompleteStr("12/24 8:09(1:15.0)"))
+            .unwrap()
+            .1
     );
 }
 

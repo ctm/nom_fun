@@ -1,2 +1,1 @@
-pub struct Xlsx {
-}
+pub struct Xlsx {}

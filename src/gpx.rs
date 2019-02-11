@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
-use roxmltree::Node;
 use chrono::{DateTime, Utc};
-use std::collections::BinaryHeap;
 use ordered_float::NotNan;
-use time::Duration;
+use roxmltree::Node;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+use time::Duration;
 
 // TODO: figure out the interval duration looking for abrupt changes in
 //       speed.  Consider having a constant like 5 for the common factor
@@ -54,7 +54,6 @@ impl PartialEq for Interval {
     fn eq(&self, other: &Interval) -> bool {
         self.rank == other.rank && self.start == other.start
     }
-    
 }
 
 impl Eq for Interval {}
@@ -67,7 +66,7 @@ impl Trkpt {
     fn u8_from_node(node: &Node) -> Option<u8> {
         Some(u8::from_str(node.text().unwrap()).unwrap())
     }
-    
+
     fn from_node(node: &Node) -> Self {
         let mut time = None;
         let mut meters_per_second = None;
@@ -96,9 +95,10 @@ impl Trkpt {
                 time,
                 meters_per_second,
                 meters,
-                heart_rate, cadence,
+                heart_rate,
+                cadence,
                 elevation_meters,
-                vertical_mps
+                vertical_mps,
             },
         }
     }
@@ -112,15 +112,15 @@ impl Gpx {
 
     fn trkpts(doc: &roxmltree::Document) -> Vec<Trkpt> {
         doc.descendants()
-           .next()
-           .unwrap()
-           .descendants()
-           .find(|n| n.has_tag_name("trkseg"))
-           .unwrap()
-           .descendants()
-           .filter(|n| n.has_tag_name("trkpt"))
-           .map(|trkpt| Trkpt::from_node(&trkpt) )
-           .collect()
+            .next()
+            .unwrap()
+            .descendants()
+            .find(|n| n.has_tag_name("trkseg"))
+            .unwrap()
+            .descendants()
+            .filter(|n| n.has_tag_name("trkpt"))
+            .map(|trkpt| Trkpt::from_node(&trkpt))
+            .collect()
     }
 
     fn f64_duration(duration: &Duration) -> f64 {
@@ -144,7 +144,7 @@ impl Gpx {
         // Ambit 3).  Specifically, I added it after trying to suss
         // the intervals out of my 2018_07_02 file and having it fail
         // due to an incorrect gain.
-        1.0 + (gain_per_second  / 0.062_511).min(1.0) * 0.15
+        1.0 + (gain_per_second / 0.062_511).min(1.0) * 0.15
     }
 
     // TODO: get rid of loss_fudge once the parameterized version of
@@ -203,18 +203,27 @@ impl Gpx {
                     let meters_per_second = meters / f64_duration;
                     let gain_per_second = gain / f64_duration;
                     let loss_per_second = loss / f64_duration;
-                    let rank = NotNan::new(meters_per_second *
-                                           Self::gain_fudge(gain_per_second) *
-                                           Self::loss_fudge(loss_per_second)).unwrap();
+                    let rank = NotNan::new(
+                        meters_per_second
+                            * Self::gain_fudge(gain_per_second)
+                            * Self::loss_fudge(loss_per_second),
+                    )
+                    .unwrap();
                     let minutes_per_mile = Self::mpm_from_mps(meters_per_second);
-                    intervals.push(Interval { rank, minutes_per_mile, start, stop, gain, loss })
+                    intervals.push(Interval {
+                        rank,
+                        minutes_per_mile,
+                        start,
+                        stop,
+                        gain,
+                        loss,
+                    })
                 }
             }
         }
- 
+
         intervals
     }
-
 
     // TODO: I didn't see a trivial way to see if two Ranges intersected.
     //       That's a bit surprising, but perhaps I'm just not good enough
@@ -223,8 +232,9 @@ impl Gpx {
     //       to figure out if I'm overrlooking a method, especially one
     //       that seems likely to exist.
     fn contains(intervals: &[Interval], interval: &Interval) -> bool {
-        intervals.iter()
-                 .any(|i| interval.start < i.stop && interval.stop > i.start)
+        intervals
+            .iter()
+            .any(|i| interval.start < i.stop && interval.stop > i.start)
     }
 
     fn dump(&self, intervals: &[Interval]) {
@@ -241,7 +251,10 @@ impl Gpx {
             let rank = interval.rank;
             let gain = interval.gain;
             let loss = interval.loss;
-            println!("{:.6} {:7} {:7.1} {:.5} {:.5}", rank, elapsed, pace, gain, loss);
+            println!(
+                "{:.6} {:7} {:7.1} {:.5} {:.5}",
+                rank, elapsed, pace, gain, loss
+            );
         }
 
         let average = total_pace_durations / total_elapsed.as_secs() as u32;
@@ -268,25 +281,28 @@ impl Gpx {
 
         intervals.sort_by_key(|i| i.start);
 
-        let mut start_idx = intervals.iter()
-                                      .position(|interval|
-                                                *interval == best).unwrap();
+        let mut start_idx = intervals
+            .iter()
+            .position(|interval| *interval == best)
+            .unwrap();
         let mut stop_idx = start_idx + 1;
 
         let mut expected_start = best.start - span_with_slop;
         let min_rank = best.rank * 0.70; // TODO: document!
-        while start_idx > 0 &&
-            intervals[start_idx-1].start >= expected_start &&
-            intervals[start_idx-1].rank >= min_rank {
+        while start_idx > 0
+            && intervals[start_idx - 1].start >= expected_start
+            && intervals[start_idx - 1].rank >= min_rank
+        {
             start_idx -= 1;
             expected_start = intervals[start_idx].start - span_with_slop;
         }
 
         let max_stop_idx = intervals.len();
         expected_start = best.start + span_with_slop;
-        while stop_idx < max_stop_idx &&
-              intervals[stop_idx].start <= expected_start &&
-              intervals[stop_idx].rank >= min_rank {
+        while stop_idx < max_stop_idx
+            && intervals[stop_idx].start <= expected_start
+            && intervals[stop_idx].rank >= min_rank
+        {
             stop_idx += 1;
             if stop_idx < max_stop_idx {
                 expected_start = intervals[stop_idx].start + span_with_slop;
@@ -311,15 +327,20 @@ impl Gpx {
             }
         }
 
-        Self::restrict_to_actual_intervals(&mut intervals,
-                                           f32::from(duration) + f32::from(rest),
-                                           count);
+        Self::restrict_to_actual_intervals(
+            &mut intervals,
+            f32::from(duration) + f32::from(rest),
+            count,
+        );
 
         self.dump(&intervals);
 
         if intervals.len() != usize::from(count) {
-            panic!("Was told to find {} intervals, but found {}", count,
-                   intervals.len());
+            panic!(
+                "Was told to find {} intervals, but found {}",
+                count,
+                intervals.len()
+            );
         }
     }
 }

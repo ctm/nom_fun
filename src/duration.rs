@@ -41,7 +41,7 @@ impl fmt::Display for Duration {
         if tenths > 0 || precision > 0 {
             result.push_str(&format!(".{}", tenths));
         }
-        write!(f, "{:>width$}", result, width=width)
+        write!(f, "{:>width$}", result, width = width)
     }
 }
 
@@ -49,7 +49,10 @@ impl fmt::Display for Duration {
 fn test_display() {
     assert_eq!(format!("{:7}", Duration::new(35, 0)), "     35");
     assert_eq!(format!("{:7}", Duration::new_min_sec(49, 32)), "  49:32");
-    assert_eq!(format!("{:7.1}", Duration::new_min_sec_tenths(9, 12, 3)), " 9:12.3");
+    assert_eq!(
+        format!("{:7.1}", Duration::new_min_sec_tenths(9, 12, 3)),
+        " 9:12.3"
+    );
 }
 
 impl Duration {
@@ -62,7 +65,10 @@ impl Duration {
     }
 
     pub fn new_min_sec_tenths(mins: u64, secs: u8, tenths: u8) -> Self {
-        Self::new(mins * SECONDS_IN_MINUTE + u64::from(secs), u32::from(tenths) * 100_000_000)
+        Self::new(
+            mins * SECONDS_IN_MINUTE + u64::from(secs),
+            u32::from(tenths) * 100_000_000,
+        )
     }
 }
 
@@ -81,7 +87,7 @@ impl From<time::Duration> for Duration {
 }
 
 impl<'a> std::iter::Sum<&'a Duration> for Duration {
-    fn sum<I: Iterator<Item=&'a Duration>>(iter: I) -> Duration {
+    fn sum<I: Iterator<Item = &'a Duration>>(iter: I) -> Duration {
         Duration(iter.map(|d| d.0).sum())
     }
 }

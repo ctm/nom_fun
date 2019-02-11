@@ -5,9 +5,9 @@ mod opt;
 
 use crate::opt::Opt;
 
-use std::path::Path;
 use std::fs;
 use std::io::Read;
+use std::path::Path;
 
 use nom_fun::gpx::Gpx;
 use structopt::StructOpt;
@@ -37,9 +37,8 @@ pub fn main() {
             Some(Some("gpx")) => {
                 let gpx = Gpx::from_string(&contents);
                 // println!("{:?}", gpx);
-                gpx.analyze(opt.interval_duration, opt.interval_rest,
-                            opt.interval_count);
-            },
+                gpx.analyze(opt.interval_duration, opt.interval_rest, opt.interval_count);
+            }
             Some(Some("kml")) => println!("KML"),
             Some(Some("tcx")) => println!("TCX"),
             Some(Some("xlsx")) => println!("XLSX"),

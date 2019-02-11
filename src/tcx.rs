@@ -1,2 +1,1 @@
-pub struct Tcx {
-}
+pub struct Tcx {}

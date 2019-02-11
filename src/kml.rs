@@ -1,2 +1,1 @@
-pub struct Kml {
-}
+pub struct Kml {}
