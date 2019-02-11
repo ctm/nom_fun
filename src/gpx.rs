@@ -228,7 +228,6 @@ impl Gpx {
     }
 
     fn dump(&self, intervals: &[Interval]) {
-        let start = self.trkpts.first().unwrap().time;
         // TODO: document total_pace_durations
         let mut total_pace_durations = crate::duration::Duration::new(0, 0);
         let mut total_elapsed = crate::duration::Duration::new(0, 0);
@@ -236,7 +235,7 @@ impl Gpx {
         for interval in intervals {
             let seconds_per_mile = interval.minutes_per_mile * SECONDS_PER_MINUTE;
             let pace = crate::duration::Duration::from(seconds_per_mile);
-            let elapsed = crate::duration::Duration::from(interval.start - start);
+            let elapsed = crate::duration::Duration::from(interval.stop - interval.start);
             total_pace_durations += pace * elapsed;
             total_elapsed += elapsed;
             let rank = interval.rank;
