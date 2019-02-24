@@ -5,6 +5,12 @@ use ordered_float::NotNan;
 use roxmltree::Node;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+
+// FWIW, we use time::Duration here rather than
+// sports_metrics::duration::Duration because we need to be able to
+// add durations to (and subtract durations from)
+// chrono::datetime::DateTimes and sports_metrics currently
+// deliberately avoids time and chrono dependencies.
 use time::Duration;
 
 // TODO: figure out the interval duration looking for abrupt changes in
@@ -239,13 +245,14 @@ impl Gpx {
 
     fn dump(&self, intervals: &[Interval]) {
         // TODO: document total_pace_durations
-        let mut total_pace_durations = crate::duration::Duration::new(0, 0);
-        let mut total_elapsed = crate::duration::Duration::new(0, 0);
+        let mut total_pace_durations = sports_metrics::duration::Duration::new(0, 0);
+        let mut total_elapsed = sports_metrics::duration::Duration::new(0, 0);
 
         for interval in intervals {
             let seconds_per_mile = interval.minutes_per_mile * SECONDS_PER_MINUTE;
-            let pace = crate::duration::Duration::from(seconds_per_mile);
-            let elapsed = crate::duration::Duration::from(interval.stop - interval.start);
+            let pace = sports_metrics::duration::Duration::from(seconds_per_mile);
+            let elapsed = interval.stop - interval.start;
+            let elapsed = sports_metrics::duration::Duration::from(Self::f64_duration(&elapsed));
             total_pace_durations += pace * elapsed;
             total_elapsed += elapsed;
             let rank = interval.rank;

@@ -1,7 +1,7 @@
 use nom::digit;
 use nom::types::CompleteStr;
 
-use crate::duration::Duration;
+use sports_metrics::duration::Duration;
 
 //    8:22
 //    1:15.0
@@ -27,8 +27,8 @@ use crate::duration::Duration;
 // WITHOUT_DECIMAL = /#{PREFIX_AND_DOUBLE_DIGIT_SECONDS}|#{SINGLE_DIGIT_SECONDS}/
 // ALL = /#{WITHOUT_DECIMAL}#{TENTHS}?/
 
-const SECONDS_IN_MINUTE: u64 = crate::duration::SECONDS_IN_MINUTE;
-const SECONDS_IN_HOUR: u64 = crate::duration::SECONDS_IN_HOUR;
+const SECONDS_IN_MINUTE: u64 = sports_metrics::duration::SECONDS_IN_MINUTE;
+const SECONDS_IN_HOUR: u64 = sports_metrics::duration::SECONDS_IN_HOUR;
 const NANOSECONDS_IN_SECOND: u32 = 1_000_000_000;
 const TENTHS_IN_NANOSECOND: u32 = NANOSECONDS_IN_SECOND / 10;
 

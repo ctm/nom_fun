@@ -1,4 +1,4 @@
-use nom_fun::duration::Duration;
+use sports_metrics::duration::Duration;
 
 use nom::types::CompleteStr;
 
