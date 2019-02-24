@@ -26,7 +26,7 @@ pub fn main() {
 
     for path in opt.files {
         let contents = contents_from(&path);
-        match path.extension().map(|extension| extension.to_str()) {
+        match path.extension().map(std::ffi::OsStr::to_str) {
             None => {
                 if let Some(average) = interval::average_from_string(&contents) {
                     println!("Average: {:.1}", average);
