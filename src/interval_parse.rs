@@ -4,7 +4,7 @@
 
 use nom::types::CompleteStr;
 
-use sports_metrics::duration::{Duration,duration_parser};
+use sports_metrics::duration::{duration_parser, Duration};
 
 named!(pace_duration_pair<CompleteStr, (Duration, Duration)>,
   do_parse!(
@@ -36,10 +36,7 @@ mod tests {
     #[test]
     fn test_pace_duration_pair() {
         assert_eq!(
-            (
-                Duration::new_min_sec(8, 9),
-                Duration::new_min_sec(1, 15)
-            ),
+            (Duration::new_min_sec(8, 9), Duration::new_min_sec(1, 15)),
             pace_duration_pair(CompleteStr("8:09(1:15.0)")).unwrap().1
         );
     }
@@ -47,10 +44,7 @@ mod tests {
     #[test]
     fn test_eventual_pace_duration_pair() {
         assert_eq!(
-            (
-                Duration::new_min_sec(8, 9),
-                Duration::new_min_sec(1, 15)
-            ),
+            (Duration::new_min_sec(8, 9), Duration::new_min_sec(1, 15)),
             eventual_pace_duration_pair(CompleteStr("12/24 8:09(1:15.0)"))
                 .unwrap()
                 .1

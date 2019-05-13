@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
 use ordered_float::NotNan;
+use roxmltree::Document;
 use roxmltree::Node;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
@@ -26,8 +27,8 @@ pub struct Gpx {
 }
 
 #[derive(Debug)]
-struct Trkpt {
-    time: DateTime<Utc>,
+pub struct Trkpt {
+    pub time: DateTime<Utc>,
     meters_per_second: Option<f64>,
     meters: Option<f64>,
     heart_rate: Option<u8>,
@@ -112,11 +113,11 @@ impl Trkpt {
 
 impl Gpx {
     pub fn from_string(string: &str) -> Self {
-        let trkpts = Self::trkpts(&roxmltree::Document::parse(string).unwrap());
+        let trkpts = Self::trkpts(&Document::parse(string).unwrap());
         Gpx { trkpts }
     }
 
-    fn trkpts(doc: &roxmltree::Document) -> Vec<Trkpt> {
+    pub fn trkpt_iterator<'a>(doc: &'a Document) -> impl Iterator<Item = Trkpt> + 'a {
         doc.descendants()
             .next()
             .unwrap()
@@ -126,7 +127,10 @@ impl Gpx {
             .descendants()
             .filter(|n| n.has_tag_name("trkpt"))
             .map(|trkpt| Trkpt::from_node(&trkpt))
-            .collect()
+    }
+
+    fn trkpts(doc: &Document) -> Vec<Trkpt> {
+        Self::trkpt_iterator(doc).collect()
     }
 
     fn f64_duration(duration: &Duration) -> f64 {
