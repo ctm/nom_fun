@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate nom;
 extern crate time;
 
 pub mod fit;

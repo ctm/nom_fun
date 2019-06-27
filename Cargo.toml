@@ -5,7 +5,7 @@ authors = ["Clifford T. Matthews <ctm@devctm.com>"]
 edition = "2018"
 
 [dependencies]
-nom = "4.1.1"
+nom = "5"
 calamine = "0.15.3"
 roxmltree = "0.4.0"
 nom-trace = "0.1.0"
@@ -14,4 +14,4 @@ ordered-float = "1.0.1"
 lazy_static = "1.2.0"
 time = "0.1"
 structopt = "0.2.14"
-sports-metrics = { version = "0.1.0", path = "../sports-metrics" }
+sports-metrics = { version = "0.2.0", path = "../sports-metrics" }

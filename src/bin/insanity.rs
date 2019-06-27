@@ -1,12 +1,14 @@
 // Toy program to generate some stats concerning Elevation Insanity.
 // Mostly I wrote this to recover the transition times.
 
-#[macro_use]
-extern crate nom;
-
 use {
     chrono::{DateTime, Utc},
-    nom::types::CompleteStr,
+    nom::{
+        bytes::complete::tag,
+        character::complete::one_of,
+        error::{make_error, ErrorKind},
+        Err, IResult,
+    },
     nom_fun::{gpx::Gpx, misc},
     roxmltree::Document,
     std::{io::Result, path::PathBuf, result, str::FromStr, string::ToString},
@@ -24,7 +26,7 @@ fn to_str(duration: &Duration) -> String {
 
 fn alternate_stop(
     start: &DateTime<Utc>,
-    durations: &Vec<DurationOverride>,
+    durations: &[DurationOverride],
     i: u8,
 ) -> Option<DateTime<Utc>> {
     for duration in durations {
@@ -62,7 +64,7 @@ fn main() -> Result<()> {
     for transition in transitions {
         print!(" {}", to_str(&transition));
     }
-    println!("");
+    println!();
     Ok(())
 }
 
@@ -96,27 +98,32 @@ impl ToString for ParseDurationOverrideError {
 
 use sports_metrics::duration::duration_parser;
 
-named!(duration_override<CompleteStr, DurationOverride>,
-       do_parse!(
-           digit: one_of!("123456") >>
-               tag!("/") >>
-               duration: duration_parser >>
-               eof!() >>
-               ({
-                   let hike_index = digit as u8 - b'1';
-                   let duration: std::time::Duration = duration.into();
-                   let duration = time::Duration::from_std(duration).unwrap();
+fn duration_override(input: &str) -> IResult<&str, DurationOverride> {
+    let (input, digit) = one_of("123456")(input)?;
+    let (input, _) = tag("/")(input)?;
+    let (input, duration) = duration_parser(input)?;
+    // If there's anything left over, then we have an error.
+    if !input.len() != 0 {
+        return Err(Err::Error(make_error(input, ErrorKind::Eof)));
+    }
+    let hike_index = digit as u8 - b'1';
+    let duration: std::time::Duration = duration.into();
+    let duration = time::Duration::from_std(duration).unwrap();
 
-                   DurationOverride { duration, hike_index }
-               })
-       )
-);
+    Ok((
+        input,
+        DurationOverride {
+            duration,
+            hike_index,
+        },
+    ))
+}
 
 impl FromStr for DurationOverride {
     type Err = ParseDurationOverrideError;
 
     fn from_str(s: &str) -> result::Result<Self, Self::Err> {
-        match duration_override(CompleteStr(s)) {
+        match duration_override(s) {
             Ok((_, duration_override)) => Ok(duration_override),
             _ => Err(ParseDurationOverrideError(())),
         }

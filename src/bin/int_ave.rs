@@ -1,7 +1,6 @@
 extern crate nom_fun;
 
 use {
-    nom::types::CompleteStr,
     nom_fun::{gpx::Gpx, misc},
     sports_metrics::duration::Duration,
     std::{io::Result, path::PathBuf},
@@ -36,7 +35,7 @@ pub fn main() -> Result<()> {
 }
 
 fn average_from_string(content: &str) -> Option<Duration> {
-    let pairs = nom_fun::interval_parse::many_pace_duration_pairs(CompleteStr(&content))
+    let pairs = nom_fun::interval_parse::many_pace_duration_pairs(&content)
         .unwrap()
         .1;
     // For now we ignore the duration, which is typically 75 seconds
