@@ -6,8 +6,9 @@ use {
     nom::{
         bytes::complete::tag,
         character::complete::one_of,
-        error::{make_error, ErrorKind},
-        Err, IResult,
+        combinator::{all_consuming, map},
+        sequence::{terminated, tuple},
+        IResult,
     },
     nom_fun::{gpx::Gpx, misc},
     roxmltree::Document,
@@ -52,7 +53,7 @@ fn main() -> Result<()> {
         (start, stop)
     });
 
-    let (_, mut last_stop) = start_stops.next().unwrap();
+    let mut last_stop = start_stops.next().unwrap().1;
 
     let mut transitions = start_stops.map(|(start, stop)| {
         let transition = start - last_stop;
@@ -99,24 +100,19 @@ impl ToString for ParseDurationOverrideError {
 use sports_metrics::duration::duration_parser;
 
 fn duration_override(input: &str) -> IResult<&str, DurationOverride> {
-    let (input, digit) = one_of("123456")(input)?;
-    let (input, _) = tag("/")(input)?;
-    let (input, duration) = duration_parser(input)?;
-    // If there's anything left over, then we have an error.
-    if !input.len() != 0 {
-        return Err(Err::Error(make_error(input, ErrorKind::Eof)));
-    }
-    let hike_index = digit as u8 - b'1';
-    let duration: std::time::Duration = duration.into();
-    let duration = time::Duration::from_std(duration).unwrap();
+    all_consuming(map(
+        tuple((terminated(one_of("123456"), tag("/")), duration_parser)),
+        |(digit, duration)| {
+            let hike_index = digit as u8 - b'1';
+            let duration: std::time::Duration = duration.into();
+            let duration = time::Duration::from_std(duration).unwrap();
 
-    Ok((
-        input,
-        DurationOverride {
-            duration,
-            hike_index,
+            DurationOverride {
+                duration,
+                hike_index,
+            }
         },
-    ))
+    ))(input)
 }
 
 impl FromStr for DurationOverride {

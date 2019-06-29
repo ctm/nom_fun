@@ -6,31 +6,25 @@ use sports_metrics::duration::{duration_parser, Duration};
 
 use nom::{
     bytes::complete::{tag, take},
+    combinator::map,
     multi::{many0, many_till},
+    sequence::{terminated, tuple},
     IResult,
 };
 
 fn pace_duration_pair(input: &str) -> IResult<&str, (Duration, Duration)> {
-    let (input, pace) = duration_parser(input)?;
-    let (input, _) = tag("(")(input)?;
-    let (input, duration) = duration_parser(input)?;
-    let (input, _) = tag(")")(input)?;
-    Ok((input, (pace, duration)))
+    tuple((
+        terminated(duration_parser, tag("(")),
+        terminated(duration_parser, tag(")")),
+    ))(input)
 }
 
 fn eventual_pace_duration_pair(input: &str) -> IResult<&str, (Duration, Duration)> {
-    let (input, pair) = many_till(take(1usize), pace_duration_pair)(input)?;
-    Ok((
-        input,
-        (match pair {
-            (_, pd_pair) => pd_pair,
-        }),
-    ))
+    map(many_till(take(1usize), pace_duration_pair), |pair| pair.1)(input)
 }
 
 pub fn many_pace_duration_pairs(input: &str) -> IResult<&str, Vec<(Duration, Duration)>> {
-    let (input, res) = many0(eventual_pace_duration_pair)(input)?;
-    Ok((input, res))
+    many0(eventual_pace_duration_pair)(input)
 }
 
 #[cfg(test)]
