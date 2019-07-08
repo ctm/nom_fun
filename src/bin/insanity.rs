@@ -2,7 +2,7 @@
 // Mostly I wrote this to recover the transition times.
 
 use {
-    chrono::{DateTime, Utc},
+    chrono::{DateTime, Duration, Utc},
     nom::{
         bytes::complete::tag,
         character::complete::one_of,
@@ -12,9 +12,8 @@ use {
     },
     nom_fun::{gpx::Gpx, misc},
     roxmltree::Document,
-    std::{io::Result, path::PathBuf, result, str::FromStr, string::ToString},
+    std::{path::PathBuf, result, str::FromStr, string::ToString},
     structopt::StructOpt,
-    time::Duration,
 };
 
 fn to_str(duration: &Duration) -> String {
@@ -38,7 +37,7 @@ fn alternate_stop(
     None
 }
 
-fn main() -> Result<()> {
+fn main() {
     let opt = Opt::from_args();
     let durations = &opt.durations;
 
@@ -66,7 +65,6 @@ fn main() -> Result<()> {
         print!(" {}", to_str(&transition));
     }
     println!();
-    Ok(())
 }
 
 // target/release/insanity --duration=4/3:46:49 ~/Downloads/EI_IX_gpx/*.gpx
@@ -105,7 +103,7 @@ fn duration_override(input: &str) -> IResult<&str, DurationOverride> {
         |(digit, duration)| {
             let hike_index = digit as u8 - b'1';
             let duration: std::time::Duration = duration.into();
-            let duration = time::Duration::from_std(duration).unwrap();
+            let duration = Duration::from_std(duration).unwrap();
 
             DurationOverride {
                 duration,

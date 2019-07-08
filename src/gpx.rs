@@ -1,18 +1,11 @@
 use std::str::FromStr;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use ordered_float::NotNan;
 use roxmltree::Document;
 use roxmltree::Node;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-
-// FWIW, we use time::Duration here rather than
-// digital_duration_nom::duration::Duration because we need to be able to
-// add durations to (and subtract durations from)
-// chrono::datetime::DateTimes and digital_duration_nom currently
-// deliberately avoids time and chrono dependencies.
-use time::Duration;
 
 // TODO: figure out the interval duration looking for abrupt changes in
 //       speed.  Consider having a constant like 5 for the common factor
@@ -37,7 +30,7 @@ pub struct Trkpt {
     vertical_mps: Option<f64>,
 }
 
-#[derive(Debug, PartialOrd, Clone)]
+#[derive(Debug, Clone)]
 struct Interval {
     rank: NotNan<f64>, // meters_per_second, adjusted by elevation changes
     minutes_per_mile: f64,
@@ -48,7 +41,7 @@ struct Interval {
 }
 
 impl Ord for Interval {
-    fn cmp(&self, other: &Interval) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         match self.rank.cmp(&other.rank) {
             Ordering::Less => Ordering::Less,
             Ordering::Greater => Ordering::Greater,
@@ -57,8 +50,14 @@ impl Ord for Interval {
     }
 }
 
+impl PartialOrd for Interval {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl PartialEq for Interval {
-    fn eq(&self, other: &Interval) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.rank == other.rank && self.start == other.start
     }
 }
@@ -66,12 +65,12 @@ impl PartialEq for Interval {
 impl Eq for Interval {}
 
 impl Trkpt {
-    fn f64_from_node(node: &Node) -> Option<f64> {
-        Some(f64::from_str(node.text().unwrap()).unwrap())
+    fn f64_from_node(node: &Node) -> f64 {
+        f64::from_str(node.text().unwrap()).unwrap()
     }
 
-    fn u8_from_node(node: &Node) -> Option<u8> {
-        Some(u8::from_str(node.text().unwrap()).unwrap())
+    fn u8_from_node(node: &Node) -> u8 {
+        u8::from_str(node.text().unwrap()).unwrap()
     }
 
     fn from_node(node: &Node) -> Self {
@@ -86,12 +85,12 @@ impl Trkpt {
         for elem in node.descendants() {
             match elem.tag_name().name() {
                 "time" => time = Some(DateTime::<Utc>::from_str(elem.text().unwrap()).unwrap()),
-                "speed" => meters_per_second = Self::f64_from_node(&elem),
-                "distance" => meters = Self::f64_from_node(&elem),
-                "hr" => heart_rate = Self::u8_from_node(&elem),
-                "cadence" => cadence = Self::u8_from_node(&elem),
-                "altitude" => elevation_meters = Self::f64_from_node(&elem),
-                "verticalSpeed" => vertical_mps = Self::f64_from_node(&elem),
+                "speed" => meters_per_second = Some(Self::f64_from_node(&elem)),
+                "distance" => meters = Some(Self::f64_from_node(&elem)),
+                "hr" => heart_rate = Some(Self::u8_from_node(&elem)),
+                "cadence" => cadence = Some(Self::u8_from_node(&elem)),
+                "altitude" => elevation_meters = Some(Self::f64_from_node(&elem)),
+                "verticalSpeed" => vertical_mps = Some(Self::f64_from_node(&elem)),
                 _ => (),
             }
         }
@@ -137,32 +136,6 @@ impl Gpx {
         duration.num_nanoseconds().unwrap() as f64 * 1e-9
     }
 
-    // I'm not convinced that fudging by elevation is the way to go.
-    // It makes more sense to compare speed on either side of a
-    // potential interval, although that could give us false positives
-    // with short descents.
-    //
-    // OTOH, I have about nine months of Monday Intervals.  I used to
-    // do them at fixed points, so the amount of rest between the
-    // interval would vary from week to week, and my interval duration
-    // was initially just a minute.  My guess is that if I add a
-    // couple of parameters to the detection routine that I can get by
-    // just with the gain fudge.
-    fn gain_fudge(gain_per_second: f64) -> f64 {
-        // The min here is mostly due to the possibility of a false
-        // value due to the way elevation works (at least with my
-        // Ambit 3).  Specifically, I added it after trying to suss
-        // the intervals out of my 2018_07_02 file and having it fail
-        // due to an incorrect gain.
-        1.0 + (gain_per_second / 0.062_511).min(1.0) * 0.15
-    }
-
-    // TODO: get rid of loss_fudge once the parameterized version of
-    // the interval finder is working with all my sample data.
-    fn loss_fudge(_loss_per_second: f64) -> f64 {
-        1.0
-    }
-
     fn mpm_from_mps(meters_per_second: f64) -> f64 {
         METERS_PER_MILE / SECONDS_PER_MINUTE / meters_per_second
     }
@@ -171,7 +144,11 @@ impl Gpx {
         let mut intervals = BinaryHeap::<Interval>::new();
         let interval_duration = Duration::seconds(i64::from(duration));
 
-        for window in self.trkpts.windows(duration as usize + 1) {
+        // The * 2 is a fudge factor.  With my Ambit 3, we get a
+        // little more than one sample per second now that the GPX
+        // files are coming from the .sml files running through
+        // convert-moves.
+        for window in self.trkpts.windows(duration as usize * 2) {
             let mut window = window.iter();
             if let Some(trkpt) = window.next() {
                 let start = trkpt.time;
@@ -184,10 +161,7 @@ impl Gpx {
                 while duration < interval_duration {
                     if let Some(trkpt) = window.next() {
                         if let Some(meters_per_second) = trkpt.meters_per_second {
-                            let vertical_mps = match trkpt.vertical_mps {
-                                Some(vertical_mps) => vertical_mps,
-                                None => 0.0,
-                            };
+                            let vertical_mps = trkpt.vertical_mps.unwrap_or(0.0);
                             let time = trkpt.time;
                             let delta = time - last_time;
                             let f64_delta = Self::f64_duration(&delta);
@@ -211,14 +185,7 @@ impl Gpx {
                     let stop = start + duration;
                     let f64_duration = Self::f64_duration(&duration);
                     let meters_per_second = meters / f64_duration;
-                    let gain_per_second = gain / f64_duration;
-                    let loss_per_second = loss / f64_duration;
-                    let rank = NotNan::new(
-                        meters_per_second
-                            * Self::gain_fudge(gain_per_second)
-                            * Self::loss_fudge(loss_per_second),
-                    )
-                    .unwrap();
+                    let rank = NotNan::new(meters_per_second).unwrap();
                     let minutes_per_mile = Self::mpm_from_mps(meters_per_second);
                     intervals.push(Interval {
                         rank,
@@ -256,15 +223,16 @@ impl Gpx {
             let seconds_per_mile = interval.minutes_per_mile * SECONDS_PER_MINUTE;
             let pace = digital_duration_nom::duration::Duration::from(seconds_per_mile);
             let elapsed = interval.stop - interval.start;
-            let elapsed = digital_duration_nom::duration::Duration::from(Self::f64_duration(&elapsed));
+            let elapsed =
+                digital_duration_nom::duration::Duration::from(Self::f64_duration(&elapsed));
             total_pace_durations += pace * elapsed;
             total_elapsed += elapsed;
             let rank = interval.rank;
             let gain = interval.gain;
             let loss = interval.loss;
             println!(
-                "{:.6} {:7} {:7.1} {:.5} {:.5}",
-                rank, elapsed, pace, gain, loss
+                "{:.6} {:7} {:7.1} {:.5} {:.5} {} {}", // DO NOT COMMIT
+                rank, elapsed, pace, gain, loss, interval.start, interval.stop
             );
         }
 

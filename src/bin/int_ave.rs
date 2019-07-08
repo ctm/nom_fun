@@ -1,8 +1,8 @@
 extern crate nom_fun;
 
 use {
-    nom_fun::{gpx::Gpx, misc},
     digital_duration_nom::duration::Duration,
+    nom_fun::{gpx::Gpx, misc},
     std::{io::Result, path::PathBuf},
     structopt::StructOpt,
 };

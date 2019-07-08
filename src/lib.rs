@@ -1,5 +1,3 @@
-extern crate time;
-
 pub mod fit;
 pub mod gpx;
 pub mod interval_parse;
