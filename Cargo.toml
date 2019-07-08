@@ -13,4 +13,4 @@ ordered-float = "1.0.1"
 lazy_static = "1.2.0"
 time = "0.1"
 structopt = "0.2.14"
-sports-metrics = { version = "0.2.0", path = "../sports-metrics" }
+digital-duration-nom = { version = "0.1.0", path = "../../../digital-duration-nom" }

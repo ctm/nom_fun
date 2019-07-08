@@ -2,7 +2,7 @@
 //       ridiculous now that most of the duration parsing is now in
 //       sports-metrics.
 
-use sports_metrics::duration::{duration_parser, Duration};
+use digital_duration_nom::duration::{duration_parser, Duration};
 
 use nom::{
     bytes::complete::{tag, take},

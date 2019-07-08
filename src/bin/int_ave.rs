@@ -2,7 +2,7 @@ extern crate nom_fun;
 
 use {
     nom_fun::{gpx::Gpx, misc},
-    sports_metrics::duration::Duration,
+    digital_duration_nom::duration::Duration,
     std::{io::Result, path::PathBuf},
     structopt::StructOpt,
 };

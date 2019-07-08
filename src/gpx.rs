@@ -8,9 +8,9 @@ use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
 // FWIW, we use time::Duration here rather than
-// sports_metrics::duration::Duration because we need to be able to
+// digital_duration_nom::duration::Duration because we need to be able to
 // add durations to (and subtract durations from)
-// chrono::datetime::DateTimes and sports_metrics currently
+// chrono::datetime::DateTimes and digital_duration_nom currently
 // deliberately avoids time and chrono dependencies.
 use time::Duration;
 
@@ -249,14 +249,14 @@ impl Gpx {
 
     fn dump(&self, intervals: &[Interval]) {
         // TODO: document total_pace_durations
-        let mut total_pace_durations = sports_metrics::duration::Duration::new(0, 0);
-        let mut total_elapsed = sports_metrics::duration::Duration::new(0, 0);
+        let mut total_pace_durations = digital_duration_nom::duration::Duration::new(0, 0);
+        let mut total_elapsed = digital_duration_nom::duration::Duration::new(0, 0);
 
         for interval in intervals {
             let seconds_per_mile = interval.minutes_per_mile * SECONDS_PER_MINUTE;
-            let pace = sports_metrics::duration::Duration::from(seconds_per_mile);
+            let pace = digital_duration_nom::duration::Duration::from(seconds_per_mile);
             let elapsed = interval.stop - interval.start;
-            let elapsed = sports_metrics::duration::Duration::from(Self::f64_duration(&elapsed));
+            let elapsed = digital_duration_nom::duration::Duration::from(Self::f64_duration(&elapsed));
             total_pace_durations += pace * elapsed;
             total_elapsed += elapsed;
             let rank = interval.rank;

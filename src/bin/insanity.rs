@@ -97,7 +97,7 @@ impl ToString for ParseDurationOverrideError {
     }
 }
 
-use sports_metrics::duration::duration_parser;
+use digital_duration_nom::duration::duration_parser;
 
 fn duration_override(input: &str) -> IResult<&str, DurationOverride> {
     all_consuming(map(
