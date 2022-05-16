@@ -1,11 +1,11 @@
-use std::str::FromStr;
-
 use chrono::{DateTime, Duration, Utc};
+use geo::{prelude::*, LineString};
 use ordered_float::NotNan;
 use roxmltree::Document;
 use roxmltree::Node;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::str::FromStr;
 
 // TODO: figure out the interval duration looking for abrupt changes in
 //       speed.  Consider having a constant like 5 for the common factor
@@ -23,11 +23,17 @@ pub struct Gpx {
 pub struct Trkpt {
     pub time: DateTime<Utc>,
     meters_per_second: Option<f64>,
+    #[allow(dead_code)]
     meters: Option<f64>,
+    #[allow(dead_code)]
     heart_rate: Option<u8>,
+    #[allow(dead_code)]
     cadence: Option<u8>,
+    #[allow(dead_code)]
     elevation_meters: Option<f64>,
     vertical_mps: Option<f64>,
+    lat: f64,
+    lon: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -81,13 +87,19 @@ impl Trkpt {
         let mut cadence = None;
         let mut elevation_meters = None;
         let mut vertical_mps = None;
+        let lat = node.attribute("lat").unwrap().parse().unwrap();
+        let lon = node.attribute("lon").unwrap().parse().unwrap();
 
         for elem in node.descendants() {
+            if elem.text().is_none() {
+                // TODO: change this to an if let and
+                continue; // then use the value
+            }
             match elem.tag_name().name() {
                 "time" => time = Some(DateTime::<Utc>::from_str(elem.text().unwrap()).unwrap()),
                 "speed" => meters_per_second = Some(Self::f64_from_node(&elem)),
                 "distance" => meters = Some(Self::f64_from_node(&elem)),
-                "hr" => heart_rate = Some(Self::u8_from_node(&elem)),
+                "hr" | "heartrate" => heart_rate = Some(Self::u8_from_node(&elem)),
                 "cadence" => cadence = Some(Self::u8_from_node(&elem)),
                 "altitude" => elevation_meters = Some(Self::f64_from_node(&elem)),
                 "verticalSpeed" => vertical_mps = Some(Self::f64_from_node(&elem)),
@@ -105,17 +117,14 @@ impl Trkpt {
                 cadence,
                 elevation_meters,
                 vertical_mps,
+                lat,
+                lon,
             },
         }
     }
 }
 
 impl Gpx {
-    pub fn from_string(string: &str) -> Self {
-        let trkpts = Self::trkpts(&Document::parse(string).unwrap());
-        Gpx { trkpts }
-    }
-
     pub fn trkpt_iterator<'a>(doc: &'a Document) -> impl Iterator<Item = Trkpt> + 'a {
         doc.descendants()
             .next()
@@ -231,8 +240,8 @@ impl Gpx {
             let gain = interval.gain;
             let loss = interval.loss;
             println!(
-                "{:.6} {:7} {:7.1} {:.5} {:.5} {} {}", // DO NOT COMMIT
-                rank, elapsed, pace, gain, loss, interval.start, interval.stop
+                "{rank:.6} {elapsed:7} {pace:7.1} {gain:.5} {loss:.5} {} {}",
+                interval.start, interval.stop
             );
         }
 
@@ -296,7 +305,7 @@ impl Gpx {
         *intervals = results;
     }
 
-    pub fn analyze(&self, duration: u8, rest: u8, count: u8) {
+    fn intervals(&self, duration: u8, rest: u8, count: u8) -> Vec<Interval> {
         let mut heap = self.potential_intervals(duration);
         let mut intervals = Vec::new();
 
@@ -311,7 +320,11 @@ impl Gpx {
             f32::from(duration) + f32::from(rest),
             count,
         );
+        intervals
+    }
 
+    pub fn analyze(&self, duration: u8, rest: u8, count: u8) {
+        let intervals = self.intervals(duration, rest, count);
         self.dump(&intervals);
 
         if intervals.len() != usize::from(count) {
@@ -321,5 +334,53 @@ impl Gpx {
                 intervals.len()
             );
         }
+    }
+
+    pub fn already_has_meters_per_second(&mut self) -> bool {
+        self.trkpts.iter().all(|t| t.meters_per_second.is_some())
+    }
+
+    // NOTE: elevation isn't taken into account, just haversine_length.
+    //       In theory, elevation matters, since if someone goes
+    //       straight up by a meter, the haversine_length should be
+    //       zero, but the distance traveled is a meter.  However,
+    //       IIRC, elevation is much less accurate than lat and long
+    //       and I use this tool mostly to analyze the intervals that
+    //       I run around Albuquerque where there aren't any
+    //       particularly steep incines or declines.
+    pub fn fill_in_meters_per_second(&mut self) {
+        let mut iter = self.trkpts.iter_mut();
+        if let Some(&mut Trkpt {
+            mut lat,
+            mut lon,
+            mut time,
+            ..
+        }) = iter.next()
+        {
+            for trkpt in iter {
+                let new_lat = trkpt.lat;
+                let new_lon = trkpt.lon;
+                let new_time = trkpt.time;
+                let duration =
+                    ((new_time - time).num_microseconds().unwrap() as f64) / 1_000_000.00;
+                let candidate = LineString::<f64>::from(vec![(lon, lat), (new_lon, new_lat)])
+                    .haversine_length()
+                    / duration;
+                trkpt.meters_per_second = Some(if candidate.is_nan() { 0.0 } else { candidate });
+                lat = new_lat;
+                lon = new_lon;
+                time = new_time;
+            }
+        }
+    }
+}
+
+impl FromStr for Gpx {
+    type Err = roxmltree::Error;
+
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        Ok(Gpx {
+            trkpts: Self::trkpts(&Document::parse(string)?),
+        })
     }
 }

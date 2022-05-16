@@ -3,7 +3,11 @@ extern crate nom_fun;
 use {
     digital_duration_nom::duration::Duration,
     nom_fun::{gpx::Gpx, misc},
-    std::{io::Result, path::PathBuf},
+    std::{
+        io::{self, ErrorKind, Result},
+        path::PathBuf,
+        str::FromStr,
+    },
     structopt::StructOpt,
 };
 
@@ -21,7 +25,14 @@ pub fn main() -> Result<()> {
             Some(None) => println!("Non-UTF8 extension"),
             Some(Some("fit")) => println!("FIT"),
             Some(Some("gpx")) => {
-                let gpx = Gpx::from_string(&contents);
+                let mut gpx =
+                    Gpx::from_str(&contents).map_err(|e| io::Error::new(ErrorKind::Other, e))?;
+                if gpx.already_has_meters_per_second() {
+                    println!("Old:");
+                    gpx.analyze(opt.interval_duration, opt.interval_rest, opt.interval_count);
+                    println!("New:");
+                }
+                gpx.fill_in_meters_per_second();
                 // println!("{:?}", gpx);
                 gpx.analyze(opt.interval_duration, opt.interval_rest, opt.interval_count);
             }
@@ -35,7 +46,7 @@ pub fn main() -> Result<()> {
 }
 
 fn average_from_string(content: &str) -> Option<Duration> {
-    let pairs = nom_fun::interval_parse::many_pace_duration_pairs(&content)
+    let pairs = nom_fun::interval_parse::many_pace_duration_pairs(content)
         .unwrap()
         .1;
     // For now we ignore the duration, which is typically 75 seconds
