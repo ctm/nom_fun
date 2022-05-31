@@ -5,10 +5,10 @@ authors = ["Clifford T. Matthews <ctm@devctm.com>"]
 edition = "2018"
 
 [dependencies]
-nom = "6"
+nom = "7"
 roxmltree = "0.14.0"
 chrono = "0.4.6"
-ordered-float = "2.1.1"
+ordered-float = "3"
 lazy_static = "1.2.0"
 structopt = "0.3.21"
-digital-duration-nom = { version = "0.2.0", path = "../../../digital-duration-nom" }
+digital-duration-nom = { version = "0.3.0", path = "../../../digital-duration-nom" }
