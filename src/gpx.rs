@@ -101,7 +101,7 @@ impl Trkpt {
                 "distance" => meters = Some(Self::f64_from_node(&elem)),
                 "hr" | "heartrate" => heart_rate = Some(Self::u8_from_node(&elem)),
                 "cadence" => cadence = Some(Self::u8_from_node(&elem)),
-                "altitude" => elevation_meters = Some(Self::f64_from_node(&elem)),
+                "altitude" | "ele" => elevation_meters = Some(Self::f64_from_node(&elem)),
                 "verticalSpeed" => vertical_mps = Some(Self::f64_from_node(&elem)),
                 _ => (),
             }
@@ -340,20 +340,13 @@ impl Gpx {
         self.trkpts.iter().all(|t| t.meters_per_second.is_some())
     }
 
-    // NOTE: elevation isn't taken into account, just haversine_length.
-    //       In theory, elevation matters, since if someone goes
-    //       straight up by a meter, the haversine_length should be
-    //       zero, but the distance traveled is a meter.  However,
-    //       IIRC, elevation is much less accurate than lat and long
-    //       and I use this tool mostly to analyze the intervals that
-    //       I run around Albuquerque where there aren't any
-    //       particularly steep incines or declines.
     pub fn fill_in_meters_per_second(&mut self) {
         let mut iter = self.trkpts.iter_mut();
         if let Some(&mut Trkpt {
             mut lat,
             mut lon,
             mut time,
+            mut elevation_meters,
             ..
         }) = iter.next()
         {
@@ -361,15 +354,22 @@ impl Gpx {
                 let new_lat = trkpt.lat;
                 let new_lon = trkpt.lon;
                 let new_time = trkpt.time;
+                let new_elevation_meters = trkpt.elevation_meters;
                 let duration =
                     ((new_time - time).num_microseconds().unwrap() as f64) / 1_000_000.00;
-                let candidate = LineString::<f64>::from(vec![(lon, lat), (new_lon, new_lat)])
-                    .haversine_length()
-                    / duration;
+                let length_2d = LineString::<f64>::from(vec![(lon, lat), (new_lon, new_lat)])
+                    .haversine_length();
+                let length_3d = match (new_elevation_meters, elevation_meters) {
+                    (Some(em1), Some(em2)) => (length_2d.powi(2) + (em1 - em2).powi(2)).sqrt(),
+                    _ => length_2d,
+                };
+
+                let candidate = length_3d / duration;
                 trkpt.meters_per_second = Some(if candidate.is_nan() { 0.0 } else { candidate });
                 lat = new_lat;
                 lon = new_lon;
                 time = new_time;
+                elevation_meters = new_elevation_meters;
             }
         }
     }
