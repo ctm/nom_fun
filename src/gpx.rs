@@ -297,7 +297,7 @@ impl Gpx {
             }
         }
 
-        results.extend_from_slice(&intervals[start_idx..stop_idx as usize]);
+        results.extend_from_slice(&intervals[start_idx..stop_idx]);
         // Consider adjusting start_idx and stop_idx before extend_from_slice
         // since adding the intervals to results and then trimming results is
         // less efficient.  It certainly doesn't matter here, but still...
