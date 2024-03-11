@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, TimeDelta, Utc};
 use geo::{prelude::*, LineString};
 use ordered_float::NotNan;
 use roxmltree::Document;
@@ -141,7 +141,7 @@ impl Gpx {
         Self::trkpt_iterator(doc).collect()
     }
 
-    fn f64_duration(duration: &Duration) -> f64 {
+    fn f64_duration(duration: &TimeDelta) -> f64 {
         duration.num_nanoseconds().unwrap() as f64 * 1e-9
     }
 
@@ -151,7 +151,7 @@ impl Gpx {
 
     fn potential_intervals(&self, duration: u8) -> BinaryHeap<Interval> {
         let mut intervals = BinaryHeap::<Interval>::new();
-        let interval_duration = Duration::seconds(i64::from(duration));
+        let interval_duration = TimeDelta::try_seconds(i64::from(duration)).unwrap();
 
         // The * 2 is a fudge factor.  With my Ambit 3, we get a
         // little more than one sample per second now that the GPX
@@ -162,7 +162,7 @@ impl Gpx {
             if let Some(trkpt) = window.next() {
                 let start = trkpt.time;
                 let mut meters = 0.0;
-                let mut duration = Duration::seconds(0);
+                let mut duration = TimeDelta::try_seconds(0).unwrap();
                 let mut last_time = start;
                 let mut gain = 0.0;
                 let mut loss = 0.0;
@@ -181,8 +181,7 @@ impl Gpx {
                             } else {
                                 gain += change;
                             }
-                            // duration += delta; AddAssign not implemented!
-                            duration = duration + delta;
+                            duration += delta;
                             last_time = time;
                         }
                     } else {
@@ -263,7 +262,7 @@ impl Gpx {
     }
 
     fn restrict_to_actual_intervals(intervals: &mut Vec<Interval>, span: f32, count: u8) {
-        let span_with_slop = Duration::seconds((span * 1.50) as i64);
+        let span_with_slop = TimeDelta::try_seconds((span * 1.50) as i64).unwrap();
         let mut results = Vec::with_capacity(count as usize);
         let best = intervals[0].clone();
 
