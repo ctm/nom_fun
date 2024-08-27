@@ -210,16 +210,11 @@ impl Gpx {
         intervals
     }
 
-    // TODO: I didn't see a trivial way to see if two Ranges intersected.
-    //       That's a bit surprising, but perhaps I'm just not good enough
-    //       at searching out Rust methods.  Perhaps because it's so easy
-    //       to do ourselves.  Still, eventually I should ask someone how
-    //       to figure out if I'm overrlooking a method, especially one
-    //       that seems likely to exist.
-    fn contains(intervals: &[Interval], interval: &Interval) -> bool {
-        intervals
-            .iter()
-            .any(|i| interval.start < i.stop && interval.stop > i.start)
+    fn precludes(intervals: &[Interval], interval: &Interval, rest: u8) -> bool {
+        intervals.iter().any(|i| {
+            interval.start < i.stop + std::time::Duration::from_secs((rest / 2).into())
+                && interval.stop > i.start
+        })
     }
 
     fn dump(&self, intervals: &[Interval]) {
@@ -310,7 +305,7 @@ impl Gpx {
         let mut intervals = Vec::new();
 
         while let Some(interval) = heap.pop() {
-            if !Self::contains(&intervals, &interval) {
+            if !Self::precludes(&intervals, &interval, rest) {
                 intervals.push(interval);
             }
         }
