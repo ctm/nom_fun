@@ -12,7 +12,13 @@ use {
     },
     nom_fun::{gpx::Gpx, misc},
     roxmltree::Document,
-    std::{path::PathBuf, result, str::FromStr, string::ToString},
+    std::{
+        fmt::{self, Display, Formatter},
+        path::PathBuf,
+        result,
+        str::FromStr,
+        string::ToString,
+    },
     structopt::StructOpt,
 };
 
@@ -89,9 +95,9 @@ struct DurationOverride {
 #[derive(Debug)]
 struct ParseDurationOverrideError(());
 
-impl ToString for ParseDurationOverrideError {
-    fn to_string(&self) -> String {
-        "Can't parse duration override".to_string()
+impl Display for ParseDurationOverrideError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "Can't parse duration override")
     }
 }
 
