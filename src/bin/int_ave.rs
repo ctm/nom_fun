@@ -1,6 +1,7 @@
 extern crate nom_fun;
 
 use {
+    clap::Parser,
     digital_duration_nom::duration::Duration,
     nom_fun::{gpx::Gpx, misc},
     std::{
@@ -8,11 +9,10 @@ use {
         path::PathBuf,
         str::FromStr,
     },
-    structopt::StructOpt,
 };
 
 pub fn main() -> Result<()> {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     for path in opt.files {
         let contents = misc::contents_from(&path)?;
@@ -59,18 +59,17 @@ fn average_from_string(content: &str) -> Option<Duration> {
     }
 }
 
-#[derive(StructOpt, Debug)]
-#[structopt()]
+#[derive(Parser, Debug)]
 struct Opt {
     /// Duration (seconds) of each interval
-    #[structopt(short = "d", long = "interval-duration", default_value = "75")]
+    #[arg(short = 'd', long = "interval-duration", default_value = "75")]
     pub interval_duration: u8,
     /// Seconds of rest between intervals
-    #[structopt(short = "r", long = "interval-rest", default_value = "30")]
+    #[arg(short = 'r', long = "interval-rest", default_value = "30")]
     pub interval_rest: u8,
     /// Number of intervals to find within file
-    #[structopt(short = "c", long = "interval-count", default_value = "12")]
+    #[arg(short = 'c', long = "interval-count", default_value = "12")]
     pub interval_count: u8,
-    #[structopt(parse(from_os_str))]
+    #[arg()]
     pub files: Vec<PathBuf>,
 }

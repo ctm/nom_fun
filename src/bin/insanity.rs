@@ -3,6 +3,7 @@
 
 use {
     chrono::{DateTime, Duration, Utc},
+    clap::Parser,
     nom::{
         bytes::complete::tag,
         character::complete::one_of,
@@ -13,13 +14,12 @@ use {
     nom_fun::{gpx::Gpx, misc},
     roxmltree::Document,
     std::{
+        error::Error,
         fmt::{self, Display, Formatter},
         path::PathBuf,
         result,
         str::FromStr,
-        string::ToString,
     },
-    structopt::StructOpt,
 };
 
 fn to_str(duration: &Duration) -> String {
@@ -44,7 +44,7 @@ fn alternate_stop(
 }
 
 fn main() {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     let durations = &opt.durations;
 
     let mut start_stops = opt.files.into_iter().enumerate().map(|(i, path)| {
@@ -75,18 +75,15 @@ fn main() {
 
 // target/release/insanity --duration=4/3:46:49 ~/Downloads/EI_IX_gpx/*.gpx
 
-// Using StructOpt right off the bat may be overkill, but I'm already using
-// it in int_ave and I might want to add command line options, so ...
-#[derive(StructOpt, Debug)]
-#[structopt()]
+#[derive(Parser, Debug)]
 struct Opt {
     /// Override a 1-based hike's duration, e.g., --duration=4/3:46:49
-    #[structopt(long = "duration")]
+    #[arg(long = "duration", value_parser = DurationOverride::from_str)]
     pub durations: Vec<DurationOverride>,
     pub files: Vec<PathBuf>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct DurationOverride {
     hike_index: u8, // 0-based
     duration: Duration,
@@ -94,6 +91,8 @@ struct DurationOverride {
 
 #[derive(Debug)]
 struct ParseDurationOverrideError(());
+
+impl Error for ParseDurationOverrideError {}
 
 impl Display for ParseDurationOverrideError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {

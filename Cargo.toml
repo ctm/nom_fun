@@ -10,6 +10,6 @@ roxmltree = "0.20.0"
 chrono = "0.4.24"
 ordered-float = "4.1.0"
 lazy_static = "1.4.0"
-structopt = "0.3.26"
 digital-duration-nom = { version = "0.5.0", path = "../../../digital-duration-nom" }
 geo = "0.28.0"
+clap = { version = "4.5.16", features = ["derive"] }
