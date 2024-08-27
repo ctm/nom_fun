@@ -1,6 +1,7 @@
 extern crate nom_fun;
 
 use {
+    chrono_tz::Tz,
     clap::Parser,
     digital_duration_nom::duration::Duration,
     nom_fun::{gpx::Gpx, misc},
@@ -13,6 +14,7 @@ use {
 
 pub fn main() -> Result<()> {
     let opt = Opt::parse();
+    nom_fun::set_tz(opt.time_zone);
 
     for path in opt.files {
         let contents = misc::contents_from(&path)?;
@@ -70,6 +72,8 @@ struct Opt {
     /// Number of intervals to find within file
     #[arg(short = 'c', long = "interval-count", default_value = "12")]
     pub interval_count: u8,
+    #[arg(short, long)]
+    pub time_zone: Option<Tz>,
     #[arg()]
     pub files: Vec<PathBuf>,
 }

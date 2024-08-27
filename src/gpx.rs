@@ -240,7 +240,8 @@ impl Gpx {
             let loss = interval.loss;
             println!(
                 "{rank:.6} {elapsed:7} {pace:7.1} {gain:.5} {loss:.5} {} {}",
-                interval.start, interval.stop
+                interval.start.with_timezone(crate::tz()),
+                interval.stop.with_timezone(crate::tz())
             );
         }
 
