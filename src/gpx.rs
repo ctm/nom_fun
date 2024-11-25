@@ -353,7 +353,7 @@ impl Gpx {
                 let duration =
                     ((new_time - time).num_microseconds().unwrap() as f64) / 1_000_000.00;
                 let length_2d = LineString::<f64>::from(vec![(lon, lat), (new_lon, new_lat)])
-                    .haversine_length();
+                    .length::<Haversine>();
                 let length_3d = match (new_elevation_meters, elevation_meters) {
                     (Some(em1), Some(em2)) => (length_2d.powi(2) + (em1 - em2).powi(2)).sqrt(),
                     _ => length_2d,
