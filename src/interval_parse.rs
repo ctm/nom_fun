@@ -8,23 +8,24 @@ use nom::{
     bytes::complete::{tag, take},
     combinator::map,
     multi::{many0, many_till},
-    sequence::{terminated, tuple},
-    IResult,
+    sequence::terminated,
+    IResult, Parser,
 };
 
 fn pace_duration_pair(input: &str) -> IResult<&str, (Duration, Duration)> {
-    tuple((
+    (
         terminated(duration_parser, tag("(")),
         terminated(duration_parser, tag(")")),
-    ))(input)
+    )
+        .parse(input)
 }
 
 fn eventual_pace_duration_pair(input: &str) -> IResult<&str, (Duration, Duration)> {
-    map(many_till(take(1usize), pace_duration_pair), |pair| pair.1)(input)
+    map(many_till(take(1usize), pace_duration_pair), |pair| pair.1).parse(input)
 }
 
 pub fn many_pace_duration_pairs(input: &str) -> IResult<&str, Vec<(Duration, Duration)>> {
-    many0(eventual_pace_duration_pair)(input)
+    many0(eventual_pace_duration_pair).parse(input)
 }
 
 #[cfg(test)]

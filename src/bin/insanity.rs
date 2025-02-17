@@ -8,8 +8,8 @@ use {
         bytes::complete::tag,
         character::complete::one_of,
         combinator::{all_consuming, map},
-        sequence::{terminated, tuple},
-        IResult,
+        sequence::terminated,
+        IResult, Parser as _,
     },
     nom_fun::{gpx::Gpx, misc},
     roxmltree::Document,
@@ -104,7 +104,7 @@ use digital_duration_nom::duration::duration_parser;
 
 fn duration_override(input: &str) -> IResult<&str, DurationOverride> {
     all_consuming(map(
-        tuple((terminated(one_of("123456"), tag("/")), duration_parser)),
+        (terminated(one_of("123456"), tag("/")), duration_parser),
         |(digit, duration)| {
             let hike_index = digit as u8 - b'1';
             let duration: std::time::Duration = duration.into();
@@ -115,7 +115,8 @@ fn duration_override(input: &str) -> IResult<&str, DurationOverride> {
                 hike_index,
             }
         },
-    ))(input)
+    ))
+    .parse(input)
 }
 
 impl FromStr for DurationOverride {
