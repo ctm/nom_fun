@@ -271,7 +271,7 @@ impl Gpx {
         let mut stop_idx = start_idx + 1;
 
         let mut expected_start = best.start - span_with_slop;
-        let min_rank = best.rank * 0.70; // TODO: document!
+        let min_rank = NotNan::new(best.rank * 0.70).unwrap(); // TODO: document!
         while start_idx > 0
             && intervals[start_idx - 1].start >= expected_start
             && intervals[start_idx - 1].rank >= min_rank

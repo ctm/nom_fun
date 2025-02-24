@@ -8,7 +8,7 @@ edition = "2018"
 nom = "8"
 roxmltree = "0.20.0"
 chrono = { version = "0.4.39", default-features = false }
-ordered-float = "4.6.0"
+ordered-float = "5.0.0"
 lazy_static = "1.5.0"
 digital-duration-nom = { version = "0.6.0", path = "../../../digital-duration-nom" }
 geo = "0.29.3"
