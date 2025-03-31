@@ -2,14 +2,14 @@
 //       ridiculous now that most of the duration parsing is now in
 //       sports-metrics.
 
-use digital_duration_nom::duration::{duration_parser, Duration};
+use digital_duration_nom::duration::{Duration, duration_parser};
 
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take},
     combinator::map,
-    multi::{many0, many_till},
+    multi::{many_till, many0},
     sequence::terminated,
-    IResult, Parser,
 };
 
 fn pace_duration_pair(input: &str) -> IResult<&str, (Duration, Duration)> {

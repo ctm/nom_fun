@@ -5,11 +5,11 @@ use {
     chrono::{DateTime, Duration, Utc},
     clap::Parser,
     nom::{
+        IResult, Parser as _,
         bytes::complete::tag,
         character::complete::one_of,
         combinator::{all_consuming, map},
         sequence::terminated,
-        IResult, Parser as _,
     },
     nom_fun::{gpx::Gpx, misc},
     roxmltree::Document,

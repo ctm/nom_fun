@@ -1,5 +1,5 @@
 use chrono::{DateTime, TimeDelta, Utc};
-use geo::{prelude::*, LineString};
+use geo::{LineString, prelude::*};
 use ordered_float::NotNan;
 use roxmltree::Document;
 use roxmltree::Node;
@@ -352,8 +352,10 @@ impl Gpx {
                 let new_elevation_meters = trkpt.elevation_meters;
                 let duration =
                     ((new_time - time).num_microseconds().unwrap() as f64) / 1_000_000.00;
-                let length_2d = LineString::<f64>::from(vec![(lon, lat), (new_lon, new_lat)])
-                    .length::<Haversine>();
+                let length_2d = Haversine.length(&LineString::<f64>::from(vec![
+                    (lon, lat),
+                    (new_lon, new_lat),
+                ]));
                 let length_3d = match (new_elevation_meters, elevation_meters) {
                     (Some(em1), Some(em2)) => (length_2d.powi(2) + (em1 - em2).powi(2)).sqrt(),
                     _ => length_2d,
