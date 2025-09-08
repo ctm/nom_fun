@@ -6,7 +6,7 @@ use {
     digital_duration_nom::duration::Duration,
     nom_fun::{gpx::Gpx, misc},
     std::{
-        io::{self, ErrorKind, Result},
+        io::{self, Result},
         path::PathBuf,
         str::FromStr,
     },
@@ -27,8 +27,7 @@ pub fn main() -> Result<()> {
             Some(None) => println!("Non-UTF8 extension"),
             Some(Some("fit")) => println!("FIT"),
             Some(Some("gpx")) => {
-                let mut gpx =
-                    Gpx::from_str(&contents).map_err(|e| io::Error::new(ErrorKind::Other, e))?;
+                let mut gpx = Gpx::from_str(&contents).map_err(io::Error::other)?;
                 if gpx.already_has_meters_per_second() {
                     println!("Old:");
                     gpx.analyze(opt.interval_duration, opt.interval_rest, opt.interval_count);
