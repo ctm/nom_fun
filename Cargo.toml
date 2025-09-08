@@ -5,13 +5,13 @@ authors = ["Clifford T. Matthews <ctm@devctm.com>"]
 edition = "2024"
 
 [dependencies]
-nom = "8"
-roxmltree = "0.20.0"
+nom = { version = "8", default-features = false }
+roxmltree = { version = "0.20.0", features = ["std"], default-features = false }
 chrono = { version = "0.4.39", default-features = false }
-ordered-float = "5.0.0"
+ordered-float = { version = "5.0.0", default-features = false }
 lazy_static = "1.5.0"
 digital-duration-nom = { version = "0.6.0", path = "../../../digital-duration-nom" }
-geo = "0.31"
+geo = { version = "0.31", default-features = false }
 clap = { version = "4.5.23", features = ["derive"] }
 chrono-tz = "0.10.0"
 iana-time-zone = "0.1.61"
