@@ -6,7 +6,7 @@ edition = "2024"
 
 [dependencies]
 nom = { version = "8", default-features = false }
-roxmltree = { version = "0.20.0", features = ["std"], default-features = false }
+roxmltree = { version = "0.21", features = ["std"], default-features = false }
 chrono = { version = "0.4.39", default-features = false }
 ordered-float = { version = "5.0.0", default-features = false }
 lazy_static = "1.5.0"
