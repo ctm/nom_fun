@@ -154,12 +154,8 @@ impl Gpx {
         let mut intervals = BinaryHeap::<Interval>::new();
         let interval_duration = TimeDelta::try_seconds(i64::from(duration)).unwrap();
 
-        // The * 2 is a fudge factor.  With my Ambit 3, we get a
-        // little more than one sample per second now that the GPX
-        // files are coming from the .sml files running through
-        // convert-moves.
-        for window in self.trkpts.windows(duration as usize * 2) {
-            let mut window = window.iter();
+        for offset in 0..self.trkpts.len() {
+            let mut window = self.trkpts[offset..].iter();
             if let Some(trkpt) = window.next() {
                 let start = trkpt.time;
                 let mut meters = 0.0;
