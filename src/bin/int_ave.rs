@@ -30,12 +30,22 @@ pub fn main() -> Result<()> {
                 let mut gpx = Gpx::from_str(&contents).map_err(io::Error::other)?;
                 if gpx.already_has_meters_per_second() {
                     println!("Old:");
-                    gpx.analyze(opt.interval_duration, opt.interval_rest, opt.interval_count);
+                    gpx.analyze(
+                        opt.interval_duration,
+                        opt.interval_rest,
+                        opt.interval_count,
+                        false,
+                    );
                     println!("New:");
                 }
                 gpx.fill_in_meters_per_second();
                 // println!("{:?}", gpx);
-                gpx.analyze(opt.interval_duration, opt.interval_rest, opt.interval_count);
+                gpx.analyze(
+                    opt.interval_duration,
+                    opt.interval_rest,
+                    opt.interval_count,
+                    opt.tod,
+                );
             }
             Some(Some("kml")) => println!("KML"),
             Some(Some("tcx")) => println!("TCX"),
@@ -75,4 +85,6 @@ struct Opt {
     pub time_zone: Option<Tz>,
     #[arg()]
     pub files: Vec<PathBuf>,
+    #[arg(long, default_value_t = false)]
+    pub tod: bool, // show time-of-day instead of elapsed for startt and stop
 }

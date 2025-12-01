@@ -1,4 +1,5 @@
 use chrono::{DateTime, TimeDelta, Utc};
+use digital_duration_nom::duration::Duration;
 use geo::{LineString, prelude::*};
 use ordered_float::NotNan;
 use roxmltree::Document;
@@ -217,31 +218,47 @@ impl Gpx {
         })
     }
 
-    fn dump(&self, intervals: &[Interval]) {
+    fn dump(&self, intervals: &[Interval], tod: bool) {
         // TODO: document total_pace_durations
-        let mut total_pace_durations = digital_duration_nom::duration::Duration::new(0, 0);
-        let mut total_elapsed = digital_duration_nom::duration::Duration::new(0, 0);
+        let mut total_pace_durations = Duration::new(0, 0);
+        let mut total_elapsed = Duration::new(0, 0);
 
         for interval in intervals {
             let seconds_per_mile = interval.minutes_per_mile * SECONDS_PER_MINUTE;
-            let pace = digital_duration_nom::duration::Duration::from(seconds_per_mile);
+            let pace = Duration::from(seconds_per_mile);
             let elapsed = interval.stop - interval.start;
-            let elapsed =
-                digital_duration_nom::duration::Duration::from(Self::f64_duration(&elapsed));
+            let elapsed = Duration::from(Self::f64_duration(&elapsed));
             total_pace_durations += pace * elapsed;
             total_elapsed += elapsed;
             let rank = interval.rank;
             let gain = interval.gain;
             let loss = interval.loss;
-            println!(
-                "{rank:.6} {elapsed:7} {pace:7.1} {gain:.5} {loss:.5} {} {}",
-                interval.start.with_timezone(crate::tz()),
-                interval.stop.with_timezone(crate::tz())
-            );
+            print!("{rank:.6} {elapsed:7} {pace:7.1} {gain:.5} {loss:.5} ");
+            if tod {
+                println!(
+                    "{} {}",
+                    interval.start.with_timezone(crate::tz()),
+                    interval.stop.with_timezone(crate::tz())
+                );
+            } else {
+                println!(
+                    "{:9.1} {:9.1}",
+                    self.elapsed(interval.start),
+                    self.elapsed(interval.stop)
+                );
+            }
         }
 
         let average = total_pace_durations / total_elapsed.as_secs() as u32;
         println!("Average: {}", average);
+    }
+
+    fn elapsed(&self, when: DateTime<Utc>) -> Duration {
+        let elapsed = when - self.trkpts[0].time;
+        Duration::new(
+            elapsed.num_seconds().try_into().unwrap(),
+            elapsed.subsec_nanos().try_into().unwrap(),
+        )
     }
 
     fn trim(intervals: &mut Vec<Interval>, count: u8) {
@@ -318,9 +335,9 @@ impl Gpx {
         intervals
     }
 
-    pub fn analyze(&self, duration: u8, rest: u8, count: u8) {
+    pub fn analyze(&self, duration: u8, rest: u8, count: u8, tod: bool) {
         let intervals = self.intervals(duration, rest, count);
-        self.dump(&intervals);
+        self.dump(&intervals, tod);
 
         if intervals.len() != usize::from(count) {
             panic!(
